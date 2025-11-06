@@ -33,4 +33,4 @@ const categorySchema = new mongoose.Schema(
 // Unique index for category name
 categorySchema.index({ name: 1 }, { unique: true });
 
-export default mongoose.model("Category", categorySchema);
+export default mongoose.model("Category", categorySchema, "Category");

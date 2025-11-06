@@ -99,4 +99,4 @@ listingSchema.methods.incrementViews = function () {
     return this.save();
 };
 
-export default mongoose.model("Listing", listingSchema);
+export default mongoose.model("Listing", listingSchema, "Listing");

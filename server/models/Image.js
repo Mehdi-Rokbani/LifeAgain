@@ -40,4 +40,4 @@ const imageSchema = new mongoose.Schema(
 // Ensure one cover image per listing
 imageSchema.index({ listing: 1, isCover: 1 }, { unique: true, partialFilterExpression: { isCover: true } });
 
-export default mongoose.model("Image", imageSchema);
+export default mongoose.model("Image", imageSchema, "Image");

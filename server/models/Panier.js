@@ -47,4 +47,4 @@ panierSchema.pre("save", async function (next) {
     next();
 });
 
-export default mongoose.model("Panier", panierSchema);
+export default mongoose.model("Panier", panierSchema, "Panier");

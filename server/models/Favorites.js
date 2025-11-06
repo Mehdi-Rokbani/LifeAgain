@@ -23,4 +23,4 @@ const favoriteSchema = new mongoose.Schema(
 // Prevent duplicates: one user can’t favorite the same listing twice
 favoriteSchema.index({ user: 1, listing: 1 }, { unique: true });
 
-export default mongoose.model("Favorite", favoriteSchema);
+export default mongoose.model("Favorite", favoriteSchema, "Favorite");

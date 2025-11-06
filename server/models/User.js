@@ -42,7 +42,7 @@ const userSchema = new mongoose.Schema(
         },
         addresses: [{
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Address"
+            ref: "Address"  
         }],
         favorites: [{
             type: mongoose.Schema.Types.ObjectId,
@@ -50,10 +50,26 @@ const userSchema = new mongoose.Schema(
         }]
 
 
-
+        /*addresses: [
+          {
+            street: String,
+            city: String,
+            region: String,
+            postalCode: String,
+            country: String,
+            isDefault: { type: Boolean, default: false },
+          },
+        ],
+    
+        favorites: [
+          {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Listing",
+          },
+        ],*/
 
     },
     { timestamps: true } // adds createdAt & updatedAt
 );
 
-export default mongoose.model("User", userSchema);
+export default mongoose.model("User", userSchema, "User");

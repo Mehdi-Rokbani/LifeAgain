@@ -79,4 +79,4 @@ commandeSchema.pre("validate", async function (next) {
     next();
 });
 
-export default mongoose.model("Commande", commandeSchema);
+export default mongoose.model("Commande", commandeSchema, "Commande");

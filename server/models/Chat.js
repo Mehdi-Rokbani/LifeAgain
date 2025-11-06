@@ -38,4 +38,4 @@ conversationSchema.index(
   { unique: true, partialFilterExpression: { listing: { $type: "objectId" } } }
 );
 
-export default mongoose.model("Conversation", conversationSchema);
+export default mongoose.model("Conversation", conversationSchema, "Conversation");
