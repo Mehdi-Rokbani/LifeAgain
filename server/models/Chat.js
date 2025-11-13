@@ -33,9 +33,7 @@ const conversationSchema = new mongoose.Schema(
 );
 
 // Avoid creating duplicate conversations between the same participants
-conversationSchema.index(
-  { participants: 1, listing: 1 },
-  { unique: true, partialFilterExpression: { listing: { $type: "objectId" } } }
-);
+conversationSchema.index({ participants: 1 }, { unique: false });
+
 
 export default mongoose.model("Conversation", conversationSchema, "Conversation");
