@@ -12,13 +12,18 @@ const categorySchema = new mongoose.Schema(
 
         icon: {
             type: String, // URL or icon name (e.g., "fa-car" or "https://cdn.com/icon.png")
-            trim: true,
+           // trim: true,
             default: "",
         },
 
-        parentCategory: {
+       /* parentCategory: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Category",
+            default: null, // null → top-level category
+        },*/
+         parentCategory: {
+            type: String,
+            trim: true,
             default: null, // null → top-level category
         },
 
