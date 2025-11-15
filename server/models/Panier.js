@@ -8,43 +8,47 @@ const panierSchema = new mongoose.Schema(
             required: true,
         },
 
-        // Each cart can contain multiple Commandes
-        commandes: [
+        items: [
             {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "Commande",
-                required: true,
-            },
+                product: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Listing",
+                    required: true,
+                },
+                quantity: {
+                    type: Number,
+                    required: true,
+                    min: 1,
+                    default: 1,
+                },
+                price: {
+                    type: Number,
+                    required: true,
+                }
+            }
         ],
 
         totalPrice: {
             type: Number,
-            required: true,
             default: 0,
         },
 
         status: {
             type: String,
-            enum: ["active", "checked_out", "abandoned"],
+            enum: ["active", "checked_out"],
             default: "active",
-        },
-
-        createdAt: {
-            type: Date,
-            default: Date.now,
-        },
+        }
     },
     { timestamps: true }
 );
 
-// 🔹 Auto-calculate total from commandes
-panierSchema.pre("save", async function (next) {
-    const Commande = mongoose.model("Commande");
-
-    const commandesDocs = await Commande.find({ _id: { $in: this.commandes } });
-    this.totalPrice = commandesDocs.reduce((sum, cmd) => sum + cmd.totalPrice, 0);
-
+// recalcul automatique du total
+panierSchema.pre("save", function (next) {
+    this.totalPrice = this.items.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+    );
     next();
 });
 
-export default mongoose.model("Panier", panierSchema, "Panier");
+export default mongoose.model("Panier", panierSchema);
