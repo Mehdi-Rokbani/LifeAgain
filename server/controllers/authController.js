@@ -3,6 +3,10 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import "../models/Address.js";
 import "../models/Listing.js";
+import { sendEmail } from "../utils/sendEmail.js";
+import crypto from "crypto";
+import { randomBytes } from "crypto";
+
 
 // REGISTER
 export const register = async (req, res) => {
@@ -19,29 +23,43 @@ export const register = async (req, res) => {
         }
 
         const hashed = await bcrypt.hash(password, 10);
+
+        // Generate verification token
+        const verificationToken = crypto.randomBytes(32).toString("hex");
+        const verificationExpires = Date.now() + 6 * 60 * 60 * 1000; // 6 hours
+
         const user = await User.create({
             username,
             email,
             password: hashed,
             phone,
+            verificationToken,
+            verificationExpires,
         });
 
-        const token = jwt.sign(
-            { id: user._id, role: user.role },
-            process.env.JWT_SECRET,
-            { expiresIn: "7d" }
+        // Verification link
+        const verifyURL = `http://localhost:5173/verify?token=${verificationToken}`;
+
+        // Send email
+        await sendEmail(
+            email,
+            "Verify your LifeAgain account",
+            `
+                <p>Hi ${username},</p>
+                <p>Click the link below to verify your email:</p>
+                <a href="${verifyURL}">${verifyURL}</a>
+                <p>This link expires in 6 hours.</p>
+            `
         );
 
         res.status(201).json({
-            message: "Registration successful",
-            user: { id: user._id, username, email },
-            token,
+            message: "Registration successful. Check your email to verify your account.",
         });
+
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 };
-
 // LOGIN
 export const login = async (req, res) => {
     try {
@@ -55,6 +73,10 @@ export const login = async (req, res) => {
 
         const match = await bcrypt.compare(password, user.password);
         if (!match) return res.status(400).json({ message: "Invalid credentials" });
+        if (!user.verified) {
+            return res.status(400).json({ message: "Please verify your email first." });
+        }
+        
 
         const token = jwt.sign(
             { id: user._id, role: user.role },

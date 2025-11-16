@@ -1,0 +1,82 @@
+.step-form {
+    width: 450px;
+    background: #ffffff;
+    padding: 32px;
+    border-radius: 14px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    text-align: left;
+    margin: 0 auto;
+}
+
+.step-title {
+    font-size: 22px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+/* Inputs */
+.onboarding-input {
+    width: 100%;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    border-radius: 10px;
+    border: 2px solid #e2e2e2;
+    background: #fafafa;
+    font-size: 15px;
+    transition: 0.2s ease;
+}
+
+.onboarding-input:focus {
+    border-color: #f4a261;
+    background: #fff;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(244, 162, 97, 0.25);
+}
+
+/* Button */
+.onboarding-btn {
+    width: 100%;
+    background: #f4a261;
+    color: white;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: 0.25s ease;
+}
+
+.onboarding-btn:hover {
+    background: #e98b3f;
+}
+
+/* Select dropdown */
+.onboarding-input select,
+select.onboarding-input {
+    appearance: none;
+    cursor: pointer;
+}
+
+/* Responsive */
+@media (max-width: 520px) {
+    .step-form {
+        width: 90%;
+        padding: 24px;
+    }
+}
+.step-form {
+    width: 450px;
+    background: #ffffff;
+    padding: 32px;
+    border-radius: 14px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    text-align: left;
+    margin: 0 auto;        /* center horizontally */
+    display: flex;
+    flex-direction: column;
+    gap: 16px;             /* spacing between inputs */
+}

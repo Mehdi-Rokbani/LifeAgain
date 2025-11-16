@@ -1,0 +1,272 @@
+/* Profile.css */
+.profile-page {
+    min-height: 100vh;
+    background-color: #f0f4f8;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.profile-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #1e40af;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: bold;
+    margin-right: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.profile-header h1 {
+    color: #1e3a8a;
+    margin: 0;
+    font-size: 2rem;
+}
+
+.profile-card {
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.profile-field {
+    padding: 20px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.profile-field:last-child {
+    border-bottom: none;
+}
+
+.field-label {
+    color: #6b7280;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.field-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.display-mode {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.display-mode span {
+    font-size: 1rem;
+    color: #1f2937;
+    font-weight: 500;
+}
+
+.edit-mode {
+    width: 100%;
+}
+
+.edit-mode input {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 1rem;
+    margin-bottom: 12px;
+    transition: border-color 0.3s;
+}
+
+.edit-mode input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+}
+
+.edit-btn,
+.save-btn,
+.cancel-btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.edit-btn {
+    background-color: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
+}
+
+.edit-btn:hover {
+    background-color: #e5e7eb;
+}
+
+.save-btn {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+}
+
+.save-btn:hover {
+    background-color: #1d4ed8;
+}
+
+.cancel-btn {
+    background-color: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
+}
+
+.cancel-btn:hover {
+    background-color: #e5e7eb;
+}
+
+.skills-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.skill-tag {
+    background-color: #e0e7ff;
+    color: #4338ca;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 0.875rem;
+    white-space: nowrap;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .profile-avatar {
+        margin-right: 0;
+        margin-bottom: 16px;
+    }
+
+    .field-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .display-mode {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .edit-btn {
+        align-self: flex-start;
+    }
+}
+
+/* Add these styles to your Profile.css file */
+
+.skills-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+}
+
+.skills-dropdown {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 100%;
+}
+
+.selected-skills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.skill-tag {
+    background-color: #e1ebff;
+    color: #0056b3;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.skill-tag.read-only {
+    padding: 5px 10px;
+}
+
+.remove-skill {
+    background: none;
+    border: none;
+    color: #0056b3;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    width: 18px;
+    height: 18px;
+}
+
+.remove-skill:hover {
+    color: #003d82;
+}
+
+.no-skills {
+    color: #888;
+    font-style: italic;
+}
+
+.skills-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    .skills-selector {
+        flex-direction: column;
+    }
+
+    .skills-dropdown {
+        width: 100%;
+    }
+}

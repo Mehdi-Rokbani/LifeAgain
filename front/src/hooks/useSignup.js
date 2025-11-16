@@ -1,50 +1,42 @@
-import { useAuthContext } from './useAuthContext'
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-export const useSingup = () => {
-    const [Error, setError] = useState(null)
-    const [Loading, setLoading] = useState(null)
-    const { dispatch } = useAuthContext();
-    const Navigate = useNavigate()
+import { useState } from "react";
+//import { useAuthContext } from "./useAuthContext";
+import { toast } from "react-toastify";
 
+export const useSignup = () => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    //const { dispatch } = useAuthContext();
 
-    const signup = async (user) => {
-        setLoading(true)
-        setError(null)
+    const signup = async (userData) => {
+        setLoading(true);
+        setError(null);
 
-        const response = await fetch("/users/register"
-            , {
+        try {
+            const response = await fetch("http://localhost:5000/api/auth/register", {
                 method: "POST",
-                headers: { "content-Type": "application/json" },
-                body: JSON.stringify(user)
-            })
-        const json = await response.json()
-        console.log('what am i geting : ', json)
-        if (!response.ok) {
-            setLoading(false)
-            setError(json.error)
-            console.log(json)
-            console.log(Error)
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(userData),
+            });
+
+            const json = await response.json();
+            console.log("🔍 Backend response:", json);
+
+            if (!response.ok) {
+                setError(json.message || "Registration failed");
+                setLoading(false);
+                return;
+            }
+
+            toast.success("Registration successful! Check your email to verify your account.");
+
+            setLoading(false);
+            return json.user;
+        } catch (err) {
+            console.error("Signup error:", err);
+            setError(err.message);
+            setLoading(false);
         }
+    };
 
-        if (response.ok) {
-            //save user in storage
-            localStorage.setItem('user', JSON.stringify(json));
-            localStorage.setItem('token', json.token);
-
-            //update AUTH CONTEXT
-            dispatch({ type: 'LOGIN', payload: json })
-            setLoading(false)
-            console.log(json)
-
-            Navigate('/');
-
-
-        }
-
-
-    }
-
-    return { signup, Loading, Error }
-
-}
+    return { signup, loading, error };
+};

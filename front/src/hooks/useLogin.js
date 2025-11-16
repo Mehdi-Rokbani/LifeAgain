@@ -1,49 +1,48 @@
-import { useAuthContext } from './useAuthContext'
-import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
-export const useLogin = () => {
-    const [Error, setError] = useState(null)
-    const [Loading, setLoading] = useState(null)
-    const { dispatch } = useAuthContext();
-    const navigate = useNavigate()
+import { useState } from "react";
+import { useAuthContext } from "./useAuthContext";
+import { useNavigate } from "react-router-dom";
 
+export const useLogin = () => {
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const { dispatch } = useAuthContext();
+    const navigate = useNavigate();
 
     const login = async (email, password) => {
-        setLoading(true)
-        setError(null)
+        setLoading(true);
+        setError(null);
 
-
-        const response = await fetch("/users/login"
-            , {
+        try {
+            const response = await fetch("http://localhost:5000/api/auth/login", {
                 method: "POST",
-                headers: { "content-Type": "application/json" },
-                body: JSON.stringify({ email, password })
-            })
-        const json = await response.json()
-        console.log('what am i geting : ', json)
-        if (!response.ok) {
-            setLoading(false)
-            setError(json.error)
-            console.log(json)
-            console.log(Error)
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const json = await response.json();
+            console.log("🔍 what am I getting:", json);
+
+            if (!response.ok) {
+                setError(json.message || "Login failed");
+                setLoading(false);
+                return;
+            }
+
+            // Save user and token
+            localStorage.setItem("user", JSON.stringify(json.user));
+            localStorage.setItem("token", json.token);
+
+            // Update context
+            dispatch({ type: "LOGIN", payload: json.user });
+
+            setLoading(false);
+            navigate("/");
+        } catch (err) {
+            console.error("Login error:", err);
+            setError("Network error or server unavailable");
+            setLoading(false);
         }
+    };
 
-        if (response.ok) {
-            //save user in storage
-            localStorage.setItem('user', JSON.stringify(json));
-            localStorage.setItem('token', json.token);
-
-            //update AUTH CONTEXT
-            dispatch({ type: 'LOGIN', payload: json })
-            setLoading(false)
-            console.log(json)
-
-            navigate('/')
-        }
-
-
-    }
-
-    return { login, Loading, Error }
-
-}
+    return { login, loading, error };
+};

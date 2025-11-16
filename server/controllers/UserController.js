@@ -1,5 +1,7 @@
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
+import cloudinary from "../config/cloudinary.js";
+import fs from "fs";
 
 // GET ALL USERS (admin only)
 export const getAllUsers = async (req, res) => {
@@ -58,3 +60,55 @@ export const deleteUser = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
+export const uploadProfilePicture = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        if (!req.file) {
+            return res.status(400).json({ message: "No image uploaded" });
+        }
+
+        const result = await cloudinary.uploader.upload(req.file.path, {
+            folder: "lifeagain_profile_pics",
+        });
+
+        // Remove temp file from local storage
+        fs.unlinkSync(req.file.path);
+
+        // Update user
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { profilePicture: result.secure_url },
+            { new: true }
+        );
+        await User.findByIdAndUpdate(
+            userId,
+            { 
+                profilePicture: result.secure_url,
+                onboardingCompleted: true 
+            },
+            { new: true }
+        );
+        
+
+        res.json({
+            message: "Profile picture updated",
+            imageUrl: user.profilePicture,
+        });
+
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+export const skipPicture = async (req, res) => {
+    try {
+        await User.findByIdAndUpdate(req.user.id, {
+            onboardingCompleted: true
+        });
+
+        res.json({ message: "Onboarding completed without profile picture" });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
