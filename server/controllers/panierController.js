@@ -97,7 +97,9 @@ export const removeProduct = async (req, res) => {
 
         await panier.save();
 
-        res.json(panier);
+        // ✅ Ajoute le populate
+        const populated = await Panier.findById(panier._id).populate('items.product');
+        res.json(populated);
 
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -122,7 +124,9 @@ export const updateQuantity = async (req, res) => {
         item.quantity = quantity;
         await panier.save();
 
-        res.json(panier);
+        // ✅ Ajoute le populate avant de retourner
+        const populated = await Panier.findById(panier._id).populate('items.product');
+        res.json(populated);
 
     } catch (err) {
         res.status(500).json({ message: err.message });

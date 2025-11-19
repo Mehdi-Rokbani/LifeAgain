@@ -1,0 +1,2 @@
+.mini-panier-item { display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-bottom:1px solid #eee; }
+.mini-panier-item img { width:60px; height:60px; object-fit:cover; border-radius:6px; }

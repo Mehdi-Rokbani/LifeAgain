@@ -1,0 +1,121 @@
+.shop-page {
+    min-height: 100vh;
+}
+
+.shop-loading,
+.shop-error {
+    text-align: center;
+    padding: 4rem 2rem;
+    font-size: 1.2rem;
+}
+
+.shop-error {
+    color: #e74c3c;
+}
+
+.shop-hero {
+    background: url('https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=1200') center/cover;
+    background-color: #F9F1E7;
+    padding: 4rem 2rem;
+    text-align: center;
+    position: relative;
+}
+
+.shop-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.shop-hero h1 {
+    position: relative;
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    color: #000;
+}
+
+.breadcrumb {
+    position: relative;
+    color: #666;
+}
+
+.breadcrumb span:last-child {
+    font-weight: 600;
+    color: #000;
+}
+
+.shop-filters {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 1.5rem 2rem;
+    background: #F9F1E7;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-group label {
+    font-weight: 600;
+    color: #333;
+}
+
+.filter-group select {
+    padding: 0.5rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+}
+
+.results-count {
+    color: #666;
+    font-weight: 500;
+}
+
+.shop-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+}
+
+.no-products {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem;
+    color: #999;
+    font-size: 1.2rem;
+}
+
+@media (max-width: 768px) {
+    .shop-hero h1 {
+        font-size: 2rem;
+    }
+
+    .shop-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .products-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+}
