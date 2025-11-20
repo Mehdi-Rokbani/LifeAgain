@@ -7,6 +7,7 @@ import registerChatHandler from "./Socket/chatHandler.js";
 import authRoutes from "./routes/authRoutes.js";
 import panierRoutes from "./routes/panierRoutes.js";
 import listingRoutes from "./routes/listingRoutes.js";
+import commandeRoutes from "./routes/commandeRoutes.js";
 import path from "path";
 import { fileURLToPath } from 'url';
 import cors from "cors";
@@ -17,6 +18,7 @@ import "./models/Category.js";
 import "./models/Address.js";
 import "./models/Listing.js";
 import "./models/Panier.js";
+import "./models/Commande.js";
 
 // ⭐ Config
 dotenv.config();
@@ -38,7 +40,7 @@ app.use('/assets', express.static(path.join(__dirname, 'public/assets')));
 app.use("/api/auth", authRoutes);
 app.use("/api/panier", panierRoutes);
 app.use("/api/listings", listingRoutes);
-
+app.use("/api/commandes", commandeRoutes);
 // ⭐ Socket.io
 const httpServer = createServer(app);
 const io = new SocketIOServer(httpServer, {

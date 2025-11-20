@@ -6,16 +6,41 @@ export const createPanier = async (req, res) => {
     try {
         const { user } = req.body;
 
-        const existing = await Panier.findOne({ user, status: "active" });
-        if (existing) return res.json(existing);
+        console.log("➕ Création panier pour user:", user);
 
-        const panier = await Panier.create({ user, items: [] });
-        res.status(201).json(panier);
+        if (!user) {
+            return res.status(400).json({ message: "L'utilisateur est requis" });
+        }
+
+        // Vérifie si un panier actif existe déjà
+        const existing = await Panier.findOne({ user, status: "active" });
+        if (existing) {
+            console.log("ℹ️ Panier actif existe déjà");
+            return res.json({ 
+                message: "Panier existant",
+                panier: existing 
+            });
+        }
+
+        // Création du panier
+        const panier = await Panier.create({
+            user,
+            items: [],
+        });
+
+        await panier.save();
+
+        console.log("✅ Nouveau panier créé:", panier._id);
+
+        res.status(201).json({
+            message: "Panier créé avec succès",
+            panier,
+        });
     } catch (err) {
+        console.error("❌ Erreur création panier:", err);
         res.status(500).json({ message: err.message });
     }
 };
-
 // 🔹 2. Get panier by user
 export const getPanierByUser = async (req, res) => {
     try {

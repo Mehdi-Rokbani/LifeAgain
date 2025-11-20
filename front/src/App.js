@@ -5,6 +5,7 @@ import Header from './components/Header/Header';
 import Footer from './components/Footer/Footer';
 import Shop from './pages/Shop/Shop';
 import Cart from './pages/Cart/Cart';
+import Checkout from './pages/Checkout/Checkout';
 import './App.css';
 
 function App() {
@@ -18,6 +19,8 @@ function App() {
               <Route path="/" element={<Shop />} />
               <Route path="/shop" element={<Shop />} />
               <Route path="/cart" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} /> 
+
             </Routes>
           </main>
           <Footer />

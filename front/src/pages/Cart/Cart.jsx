@@ -1,8 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { usePanier } from '../../context/PanierContext';
 import './Cart.css';
 
 const Cart = () => {
+    const navigate = useNavigate();
     const { panier, loading, removeProduct, updateQuantity, totalPrice, itemCount } = usePanier();
 
     if (loading && !panier) {
@@ -14,7 +16,9 @@ const Cart = () => {
             <div className="cart-empty">
                 <h2>🛒 Votre panier est vide</h2>
                 <p>Ajoutez des articles pour commencer vos achats</p>
-                <a href="/shop" className="btn-shop">Continuer mes achats</a>
+                <button onClick={() => navigate('/shop')} className="btn-shop">
+                    Continuer mes achats
+                </button>
             </div>
         );
     }
@@ -106,7 +110,12 @@ const Cart = () => {
                         <span>Total</span>
                         <span className="total-price">{totalPrice.toFixed(2)} TND</span>
                     </div>
-                    <button className="btn-checkout">Check Out</button>
+                    <button 
+                        className="btn-checkout"
+                        onClick={() => navigate('/checkout')}
+                    >
+                        Check Out
+                    </button>
                 </div>
             </div>
         </div>
