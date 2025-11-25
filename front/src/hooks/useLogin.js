@@ -1,49 +1,40 @@
 import { useAuthContext } from './useAuthContext'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+
 export const useLogin = () => {
     const [Error, setError] = useState(null)
-    const [Loading, setLoading] = useState(null)
+    const [Loading, setLoading] = useState(false)
     const { dispatch } = useAuthContext();
     const navigate = useNavigate()
-
 
     const login = async (email, password) => {
         setLoading(true)
         setError(null)
 
+        const response = await fetch("http://localhost:5000/api/auth/login", {
+            method: "POST",
+            headers: { "content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+        })
 
-        const response = await fetch("/users/login"
-            , {
-                method: "POST",
-                headers: { "content-Type": "application/json" },
-                body: JSON.stringify({ email, password })
-            })
         const json = await response.json()
-        console.log('what am i geting : ', json)
+
         if (!response.ok) {
             setLoading(false)
-            setError(json.error)
-            console.log(json)
-            console.log(Error)
+            setError(json.message)   // FIX
+            return
         }
 
-        if (response.ok) {
-            //save user in storage
-            localStorage.setItem('user', JSON.stringify(json));
-            localStorage.setItem('token', json.token);
+        // Save correct data
+        localStorage.setItem('user', JSON.stringify(json.user))
+        localStorage.setItem('token', json.token)
 
-            //update AUTH CONTEXT
-            dispatch({ type: 'LOGIN', payload: json })
-            setLoading(false)
-            console.log(json)
+        dispatch({ type: 'LOGIN', payload: json.user })
 
-            navigate('/')
-        }
-
-
+        setLoading(false)
+        navigate('/')
     }
 
     return { login, Loading, Error }
-
 }

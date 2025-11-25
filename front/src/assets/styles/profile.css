@@ -1,0 +1,114 @@
+.profile-container {
+    display: flex;
+    height: 100vh;
+    background: #fafafa;
+    font-family: "Inter", sans-serif;
+}
+
+/* LEFT SIDEBAR */
+.profile-sidebar {
+    width: 260px;
+    background: #fff;
+    padding: 40px 25px;
+    border-right: 1px solid #eee;
+}
+
+.profile-sidebar h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 25px;
+}
+
+.profile-sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.profile-sidebar li {
+    padding: 12px 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    border-radius: 6px;
+    font-weight: 500;
+    color: #444;
+}
+
+.profile-sidebar li.active,
+.profile-sidebar li:hover {
+    background: #ffe2c7;
+    color: #ff8c34;
+}
+
+/* RIGHT SIDE CONTENT */
+.profile-content {
+    flex: 1;
+    padding: 50px 80px;
+}
+
+.profile-title {
+    font-size: 30px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.profile-subtitle {
+    color: #666;
+    margin-bottom: 35px;
+}
+
+/* FORM */
+.profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 50%;
+}
+
+.profile-field label {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.profile-field input {
+    height: 46px;
+    padding: 0 14px;
+    border: 1px solid #ddd;
+    background: #f9f9f9;
+    border-radius: 6px;
+    font-size: 15px;
+}
+
+.profile-field input:focus {
+    border-color: #ff8c34;
+    outline: none;
+    background: white;
+}
+
+/* Button */
+.profile-btn {
+    width: 180px;
+    height: 46px;
+    background: #ff8c34;
+    border: none;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 10px;
+    transition: 0.2s;
+}
+
+.profile-btn:hover {
+    background: #ff7a12;
+}
+
+.profile-error {
+    color: red;
+    font-size: 14px;
+}
+
+.profile-success {
+    color: green;
+    font-size: 14px;
+}

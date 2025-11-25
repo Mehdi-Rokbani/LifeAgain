@@ -42,12 +42,15 @@ const userSchema = new mongoose.Schema(
         },
         addresses: [{
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Address"  
+            ref: "Address"
         }],
         favorites: [{
             type: mongoose.Schema.Types.ObjectId,
             ref: "Listing"
-        }]
+        }],
+       /* verificationCode: { type: String },
+        verificationExpires: { type: Date },
+        isVerified: { type: Boolean, default: false },*/
 
 
         /*addresses: [
