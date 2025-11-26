@@ -2,27 +2,6 @@ import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import Address from "../models/Address.js";
 
-
-export const addAddress = async (req, res) => {
-    /*
-    try {
-        const { userId, street, city, postalCode, country } = req.body;
-
-        const address = await Address.create({
-            user: userId,
-            street,
-            city,
-            postalCode,
-            country,
-        });
-
-        res.json({ message: "Address added", address });
-
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }*/
-};
-
 export const updatePfp = async (req, res) => {
     /*
     try {
@@ -39,7 +18,114 @@ export const updatePfp = async (req, res) => {
     } catch (err) {
         res.status(500).json({ message: err.message });
     }*/
+}; export const uploadProfilePicture = async (req, res) => {
+    try {
+        console.log("Upload request received:", {
+            userId: req.user.id,
+            file: req.file,
+            filePath: req.file?.path
+        });
+
+        if (!req.file) {
+            console.log("No file in request");
+            return res.status(400).json({ message: "No image file uploaded." });
+        }
+
+        if (!req.file.path) {
+            console.log("No file path after upload");
+            return res.status(400).json({ message: "File upload failed." });
+        }
+
+        const userId = req.user.id;
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { profilePicture: req.file.path },
+            { new: true }
+        ).select("-password");
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        console.log("Profile picture updated successfully:", updatedUser.profilePicture);
+
+        res.json({
+            message: "Profile picture updated successfully",
+            user: updatedUser,
+        });
+
+    } catch (err) {
+        console.error("PFP UPLOAD ERROR:", err);
+        res.status(500).json({
+            message: "Error uploading picture",
+            error: err.message
+        });
+    }
 };
+
+// adress add
+export const addAddress = async (req, res) => {
+    try {
+        const { street, city, postalCode, country } = req.body;
+
+        if (!street || !city || !postalCode || !country) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
+
+        const address = await Address.create({
+            user: req.user.id,
+            street,
+            city,
+            postalCode,
+            country,
+        });
+
+        // Push into user's address list
+        await User.findByIdAndUpdate(req.user.id, {
+            $push: { addresses: address._id },
+        });
+
+        res.status(201).json(address);
+    } catch (err) {
+        console.log("ADD ADDRESS ERROR:", err);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+export const getUserAddresses = async (req, res) => {
+    try {
+        const addresses = await Address.find({ user: req.user.id });
+
+        res.json(addresses);
+    } catch (err) {
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+export const deleteAddress = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const address = await Address.findOne({
+            _id: id,
+            user: req.user.id,
+        });
+
+        if (!address) return res.status(404).json({ message: "Not found" });
+
+        await address.deleteOne();
+
+        await User.findByIdAndUpdate(req.user.id, {
+            $pull: { addresses: id },
+        });
+
+        res.json({ message: "Deleted successfully" });
+    } catch (err) {
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
 
 
 
