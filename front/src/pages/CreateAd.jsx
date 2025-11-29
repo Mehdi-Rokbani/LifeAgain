@@ -9,15 +9,18 @@ export default function CreateAd() {
   const [price, setPrice] = useState("");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
+  const [condition, setCondition] = useState("used");
   const [photos, setPhotos] = useState([]);
   const [cover, setCover] = useState(null);
   
   const [photoPreviews, setPhotoPreviews] = useState([]);
   const [coverPreview, setCoverPreview] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [priceError, setPriceError] = useState(""); // AJOUT: État pour l'erreur de prix
   
   const navigate = useNavigate();
 
-  // 🔥 CORRECTION: Ajouter les nouvelles photos aux existantes
+  // Ajouter les nouvelles photos aux existantes
   const handlePhotos = (e) => {
     const newFiles = Array.from(e.target.files);
     
@@ -28,16 +31,16 @@ export default function CreateAd() {
       return;
     }
     
-    // 🔥 AJOUTER aux photos existantes (ne pas remplacer)
+    // Ajouter aux photos existantes
     setPhotos(prevPhotos => [...prevPhotos, ...newFiles]);
     
     // Créer des previews pour les nouvelles photos
     const newPreviews = newFiles.map(file => URL.createObjectURL(file));
     
-    // 🔥 AJOUTER aux previews existantes (ne pas remplacer)
+    // Ajouter aux previews existantes
     setPhotoPreviews(prevPreviews => [...prevPreviews, ...newPreviews]);
     
-    // Réinitialiser l'input pour permettre de sélectionner à nouveau
+    // Réinitialiser l'input
     e.target.value = "";
   };
 
@@ -56,6 +59,21 @@ export default function CreateAd() {
     
     // Réinitialiser l'input
     e.target.value = "";
+  };
+
+  // Validation du prix
+  const handlePriceChange = (e) => {
+    const value = e.target.value;
+    setPrice(value);
+    
+    // Validation en temps réel
+    if (value === "" || value === "0") {
+      setPriceError("Le prix doit être supérieur à 0");
+    } else if (parseFloat(value) <= 0) {
+      setPriceError("Le prix doit être supérieur à 0");
+    } else {
+      setPriceError("");
+    }
   };
 
   // Supprimer une photo spécifique
@@ -90,11 +108,20 @@ export default function CreateAd() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validation
-    if (!cover) {
-      alert("Veuillez ajouter une photo de couverture");
+    // Validation du prix avant soumission
+    const priceNum = parseFloat(price);
+    if (!price || priceNum <= 0) {
+      setPriceError("Veuillez entrer un prix supérieur à 0");
       return;
     }
+    
+    // Validation de la photo de couverture
+    if (!cover) {
+      //alert("Veuillez ajouter une photo de couverture");
+      return;
+    }
+    
+    setIsSubmitting(true);
     
     const fd = new FormData();
 
@@ -104,6 +131,7 @@ export default function CreateAd() {
     fd.append("price", price);
     fd.append("phone", phone);
     fd.append("location", location);
+    fd.append("condition", condition);
 
     if (cover) fd.append("cover", cover);
     
@@ -130,80 +158,129 @@ export default function CreateAd() {
     } catch (error) {
       console.error("Erreur:", error);
       alert("Erreur lors de la création de l'annonce");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="create-page">
 
-      {/* 🔥 HERO BANNER */}
+      {/* Hero Banner */}
       <div className="hero-banner">
         <div className="hero-text">
           <h1>Créer une annonce</h1>
-          <p>Home &gt; Shop</p>
+          <p>Home &gt; Créer une annonce</p>
         </div>
       </div>
 
-      {/* 🔥 FORMULAIRE */}
+      {/* Form Wrapper */}
       <div className="form-wrapper">
-        <h2 className="form-title">Créer une annonce</h2>
-
-        <form className="create-grid" onSubmit={handleSubmit}>
-
-          <div className="field full">
-            <label>Titre *</label>
-            <input 
-              value={title} 
-              onChange={(e) => setTitle(e.target.value)} 
-              required 
-              placeholder="Ex: iPhone 13 Pro Max"
-            />
+        <div className="form-container">
+          <div className="form-header">
+            <h2 className="form-title">Créer votre annonce</h2>
+            <p className="form-subtitle">Remplissez les informations ci-dessous</p>
           </div>
 
-          <div className="field full">
-            <label>Catégorie *</label>
-            <input 
-              value={category} 
-              onChange={(e) => setCategory(e.target.value)} 
-              required 
-              placeholder="Ex: Électronique, Vêtements..."
-            />
-          </div>
+          <form className="create-grid" onSubmit={handleSubmit}>
 
-          <div className="field full">
-            <label>Description</label>
-            <textarea 
-              value={description} 
-              onChange={(e) => setDescription(e.target.value)}
-              rows="4"
-              placeholder="Décrivez votre article..."
-            />
-          </div>
+            {/* Titre */}
+            <div className="field">
+              <label>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                Titre de l'annonce *
+              </label>
+              <input 
+                value={title} 
+                onChange={(e) => setTitle(e.target.value)} 
+                required 
+                placeholder="Ex: iPhone 13 Pro Max 256GB"
+              />
+            </div>
 
-         {/* 🔥 PHOTO DE COUVERTURE */}
-<div className="field">
-  <label>Photo de couverture *</label>
+            {/* Catégorie */}
+            <div className="field">
+              <label>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                  <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                </svg>
+                Catégorie *
+              </label>
+              <input 
+                value={category} 
+                onChange={(e) => setCategory(e.target.value)} 
+                required 
+                placeholder="Ex: Électronique, Vêtements, Maison..."
+              />
+            </div>
+
+            {/* Description */}
+            <div className="field">
+              <label>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                Description
+              </label>
+              <textarea 
+                value={description} 
+                onChange={(e) => setDescription(e.target.value)}
+                rows="5"
+                placeholder="Décrivez votre article en détail..."
+              />
+            </div>
+
+            {/* Photo de couverture et Photos supplémentaires */}
+            <div className="photos-container">
+{/* Photo de couverture */}
+<div className="field photo-section">
+  <label>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+      <circle cx="8.5" cy="8.5" r="1.5"></circle>
+      <polyline points="21 15 16 10 5 21"></polyline>
+    </svg>
+    Photo de couverture *
+  </label>
   
-  {/* Input file caché */}
   <input 
     type="file" 
     accept="image/*" 
     onChange={handleCover}
     id="cover-input"
-    style={{ display: 'none' }}
   />
   
-  {/* Bouton personnalisé */}
   <label htmlFor="cover-input" className="custom-file-button">
-     {cover ? "Changer la photo" : "Choisir un fichier"}
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+      <polyline points="17 8 12 3 7 8"></polyline>
+      <line x1="12" y1="3" x2="12" y2="15"></line>
+    </svg>
+    {cover ? "Changer la photo" : "Choisir une photo"}
   </label>
   
-  {/* Afficher le nom du fichier si sélectionné */}
-  {cover && !coverPreview && (
-    <span className="file-name">✓ {cover.name}</span>
+  {/* AJOUT: Message d'erreur pour la photo de couverture */}
+  {!cover && (
+    <div className="cover-error">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      Veuillez ajouter une photo de couverture
+    </div>
   )}
   
-  {/* Preview de la cover */}
   {coverPreview && (
     <div className="cover-preview-container">
       <div className="image-preview">
@@ -212,108 +289,157 @@ export default function CreateAd() {
           type="button" 
           className="remove-btn"
           onClick={removeCover}
-          title="Supprimer">
-          ❌
+          title="Supprimer"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
         </button>
       </div>
     </div>
   )}
 </div>
 
-{/* 🔥 PHOTOS SUPPLÉMENTAIRES */}
-<div className="field">
-  <label>Photos supplémentaires</label>
-  
-  {/* Input file caché */}
-  <input 
-    type="file" 
-    multiple 
-    accept="image/*" 
-    onChange={handlePhotos}
-    disabled={photos.length >= 8}
-    id="photos-input"
-    style={{ display: 'none' }}
-  />
-  
-  {/* Bouton personnalisé */}
-  <label 
-    htmlFor="photos-input" 
-    className={`custom-file-button ${photos.length >= 8 ? 'disabled' : ''}`}
-  >
-  {photos.length > 0 ? "Ajouter d'autres photos" : "Choisir des fichiers"}
-  </label>
-  
-  {/* Compteur */}
-  <small style={{ 
-    color: photos.length >= 8 ? "#ff0000" : photos.length > 0 ? "#28a745" : "#666",
-    fontWeight: photos.length >= 8 ? "600" : "400"
-  }}>
-    {photos.length}/8 photos sélectionnées
-    {photos.length >= 8 && " (Maximum atteint)"}
-  </small>
-  
-  {/* Preview des photos */}
-  {photoPreviews.length > 0 && (
-    <div className="photos-preview-grid">
-      {photoPreviews.map((preview, index) => (
-        <div key={index} className="image-preview">
-          <img src={preview} alt={`Photo ${index + 1}`} />
-          <button 
-            type="button" 
-            className="remove-btn"
-            onClick={() => removePhoto(index)}
-            title="Supprimer"
-          >
-            ❌
-          </button>
-          <span className="photo-number">{index + 1}</span>
+              {/* Photos supplémentaires */}
+              <div className="field photo-section">
+                <label>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                  </svg>
+                  Photos supplémentaires
+                </label>
+                
+                <input 
+                  type="file" 
+                  multiple 
+                  accept="image/*" 
+                  onChange={handlePhotos}
+                  disabled={photos.length >= 8}
+                  id="photos-input"
+                />
+                
+                <label 
+                  htmlFor="photos-input" 
+                  className={`custom-file-button ${photos.length >= 8 ? 'disabled' : ''}`}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                  {photos.length > 0 ? "Ajouter d'autres photos" : "Choisir des photos"}
+                </label>
+
+                {photoPreviews.length > 0 && (
+                  <div className="photos-preview-grid">
+                    {photoPreviews.map((preview, index) => (
+                      <div key={index} className="image-preview">
+                        <img src={preview} alt={`Photo ${index + 1}`} />
+                        <button 
+                          type="button" 
+                          className="remove-btn"
+                          onClick={() => removePhoto(index)}
+                          title="Supprimer"
+                        >
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                          </svg>
+                        </button>
+                        <span className="photo-number">{index + 1}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <small className={`photo-counter ${photos.length >= 8 ? 'danger' : photos.length > 0 ? 'success' : 'default'}`}>
+                  {photos.length}/8 photos sélectionnées
+                  {photos.length >= 8 && " (Maximum atteint)"}
+                </small>
+              </div>
+            </div>
+
+            {/* Prix et Téléphone */}
+            <div className="fields-row">
+              <div className="field">
+                <label>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                  </svg>
+                  Prix (TND) *
+                </label>
+                <input 
+                  type="number" 
+                  value={price} 
+                  onChange={handlePriceChange} // MODIFICATION: Utiliser la nouvelle fonction
+                  required 
+                  min="0.01" // MODIFICATION: Minimum à 0.01
+                  step="0.01"
+                  placeholder="0.00"
+                  className={priceError ? "error" : ""} // AJOUT: Classe d'erreur
+                />
+                {priceError && ( // AJOUT: Affichage de l'erreur
+                  <div className="error-message">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="12" y1="8" x2="12" y2="12"></line>
+                      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    {priceError}
+                  </div>
+                )}
+              </div>
+
+              <div className="field">
+                <label>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                  </svg>
+                  Téléphone *
+                </label>
+                <input 
+                  value={phone} 
+                  onChange={(e) => setPhone(e.target.value)} 
+                  required
+                  placeholder="+216 XX XXX XXX"
+                />
+              </div>
+            </div>
+
+            {/* Localisation */}
+            <div className="field">
+              <label>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                Localisation *
+              </label>
+              <input 
+                value={location} 
+                onChange={(e) => setLocation(e.target.value)} 
+                required 
+                placeholder="Ex: Tunis, Ariana, Sousse..."
+              />
+            </div>
+
+            {/* Submit Button */}
+            <div className="submit-center">
+              <button 
+                type="submit" 
+                className="submit-btn" 
+                disabled={isSubmitting || priceError || !price || parseFloat(price) <= 0} // MODIFICATION: Désactiver si erreur de prix
+              >
+                {isSubmitting ? "Publication en cours..." : "Valider"}
+              </button>
+            </div>
+
+          </form>
         </div>
-      ))}
-    </div>
-  )}
-</div>
-
-          <div className="field">
-            <label>Prix (TND) *</label>
-            <input 
-              type="number" 
-              value={price} 
-              onChange={(e) => setPrice(e.target.value)} 
-              required 
-              min="0"
-              step="0.01"
-              placeholder="0"
-            />
-          </div>
-
-          <div className="field">
-            <label>Numéro de téléphone *</label>
-            <input 
-              value={phone} 
-              onChange={(e) => setPhone(e.target.value)} 
-              required
-              min="8" 
-              placeholder="+216 XX XXX XXX"
-            />
-          </div>
-
-          <div className="field full">
-            <label>Localisation *</label>
-            <input 
-              value={location} 
-              onChange={(e) => setLocation(e.target.value)} 
-              required 
-              placeholder="Ex: Tunis, Ariana, Sousse..."
-            />
-          </div>
-
-          <div className="submit-center">
-            <button type="submit" className="submit-btn">
-            Valider
-            </button>
-          </div>
-
-        </form>
       </div>
     </div>
   );

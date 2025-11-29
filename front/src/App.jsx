@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import CreateAd from "./pages/CreateAd";
 import ListingDetail from "./pages/ListingDetail";
 import ListingsList from "./pages/ListingList";
+import ComparePage from "./pages/ComparePage";
+
 
 export default function App() {
   return (
@@ -17,7 +19,8 @@ export default function App() {
           <Route path="/shop" element={<ListingsList />} />
           <Route path="/" element={<CreateAd />} />
           <Route path="/listings/:id" element={<ListingDetail />} />
-          <Route path="/listings/:id/compare" element={<ProductComparison />} />
+          <Route path="/compare/:id" element={<ComparePage />} />
+
         </Routes>
       </div>
     </BrowserRouter>
