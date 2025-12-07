@@ -16,7 +16,14 @@ export default function Signup() {
         e.preventDefault();
         if (password !== confirmPassword) return;
 
-        signup({ username, email, password, role });
+        signup({
+            username,
+            email,
+            password,
+            confirmPassword,
+            role,
+        });
+
     };
 
     return (

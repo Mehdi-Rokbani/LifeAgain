@@ -1,5 +1,5 @@
 import Message from "../models/Message.js";
-import Conversation from "../models/chat.js";
+import Conversation from "../models/Conversation.js";
 
 import jwt from "jsonwebtoken";
 

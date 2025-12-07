@@ -22,9 +22,11 @@ export const register = async (req, res) => {
         const { username, email, password, phone, role } = req.body;
 
         // Required fields
-        if (!username || !email || !password) {
-            return res.status(400).json({ message: "All required fields must be filled." });
-        }
+
+        if (!username) { return res.status(400).json({ message: "username must be filled." }); }
+        if (!email) { return res.status(400).json({ message: "email must be filled." }); }
+        if (!password) { return res.status(400).json({ message: "password must be filled." }); }
+        if (!role) { return res.status(400).json({ message: "role must be filled." }); }
 
         // Validate role
         const allowedRoles = ["client", "seller", "admin"];

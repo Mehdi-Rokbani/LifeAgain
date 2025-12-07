@@ -16,24 +16,7 @@ const messageSchema = new mongoose.Schema(
 
         content: {
             type: String,
-            trim: true,
-            required: [true, "Message content is required"],
-        },
-
-        type: {
-            type: String,
-            enum: ["text", "image", "system"],
-            default: "text",
-        },
-
-        imageUrl: {
-            type: String, // optional for image messages
-            default: "",
-        },
-
-        isRead: {
-            type: Boolean,
-            default: false,
+            required: true,
         },
     },
     { timestamps: true }

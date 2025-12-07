@@ -1,0 +1,92 @@
+/* Sidebar layout */
+.chat-sidebar {
+    width: 28%;
+    background: #ffffff;
+    border-right: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Search bar */
+.chat-search {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.chat-search input {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 20px;
+    border: none;
+    background: #f1f1f1;
+    font-size: 14px;
+}
+
+/* Conversation list */
+.chat-list {
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+/* Chat item */
+.chat-item {
+    display: flex;
+    padding: 14px;
+    cursor: pointer;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+.chat-item:hover {
+    background: #f6f6f6;
+}
+
+/* Avatar */
+.chat-item-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 12px;
+}
+
+/* Body */
+.chat-item-body {
+    flex-grow: 1;
+}
+
+.chat-item-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.chat-item-name {
+    font-weight: 600;
+}
+
+.chat-item-time {
+    font-size: 12px;
+    color: #777;
+}
+
+.chat-item-message {
+    font-size: 13px;
+    color: #666;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+/* Unread badge */
+.chat-item-unread {
+    min-width: 20px;
+    height: 20px;
+    background: #e63d3d;
+    color: white;
+    border-radius: 50%;
+    font-size: 11px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
