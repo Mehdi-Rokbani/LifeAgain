@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import MessageBubble from "./MessageBubble";
 import "../assets/styles/chatwindow.css";
 import axios from "axios";
-import { socket } from "../socket"; // your socket instance
+import { socket } from "../socket";
 
 export default function ChatWindow({ conversation, user }) {
     const [messages, setMessages] = useState([]);
@@ -11,20 +11,25 @@ export default function ChatWindow({ conversation, user }) {
 
     const bottomRef = useRef(null);
 
-    // Scroll to latest message
     const scrollToBottom = () => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    // Load messages when conversation changes
+    // LOAD MESSAGES
     useEffect(() => {
         if (!conversation?._id) return;
 
         const loadMessages = async () => {
             try {
                 const res = await axios.get(
-                    `http://localhost:5000/api/messages/${conversation._id}/messages`
+                    `http://localhost:5000/api/messages/${conversation._id}/messages`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem("token")}`
+                        }
+                    }
                 );
+
                 setMessages(res.data);
                 scrollToBottom();
             } catch (err) {
@@ -35,86 +40,90 @@ export default function ChatWindow({ conversation, user }) {
         loadMessages();
     }, [conversation]);
 
-    // SOCKET RECEIVING MESSAGE
+    // SOCKET LISTENERS
     useEffect(() => {
-        socket.on("receive_message", (msg) => {
-            if (msg.conversationId === conversation._id) {
-                setMessages((prev) => [...prev, msg]);
+        const handleNewMessage = (msg) => {
+            if (msg.conversation === conversation._id) {
+                setMessages(prev => [...prev, msg]);
                 scrollToBottom();
             }
-        });
+        };
 
-        socket.on("typing", (senderId) => {
-            if (senderId !== user._id) {
+        const handleTyping = (senderId) => {
+            if (senderId !== user.id) {
                 setTyping(true);
                 setTimeout(() => setTyping(false), 1500);
             }
-        });
+        };
+
+        socket.on("newMessage", handleNewMessage);
+        socket.on("typing", handleTyping);
 
         return () => {
-            socket.off("receive_message");
-            socket.off("typing");
+            socket.off("newMessage", handleNewMessage);
+            socket.off("typing", handleTyping);
         };
-    }, [conversation]);
+    }, [conversation, user.id]);
 
-    // Send message
+    // SEND MESSAGE
     const handleSend = async () => {
         if (!input.trim()) return;
 
         const msg = {
-            sender: user._id,
             conversationId: conversation._id,
+            senderId: user.id,
             text: input,
         };
 
-        // Emit via socket
+        console.log("Sending:", msg);
         socket.emit("send_message", msg);
 
-        // Update UI immediately
-        setMessages((prev) => [...prev, msg]);
-
-        // Send to API
         try {
-            await axios.post("http://localhost:5000/api/messages/send", msg);
+            const res = await axios.post(
+                "http://localhost:5000/api/messages/send",
+                msg,
+                { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+            );
+
+            setMessages(prev => [...prev, res.data]); // always add server version
         } catch (err) {
-            console.log("SEND ERROR:", err);
+            console.log("SEND MESSAGE ERROR:", err);
         }
 
         setInput("");
         scrollToBottom();
     };
 
-    // Typing indicator
     const onType = (e) => {
         setInput(e.target.value);
         socket.emit("typing", {
             conversationId: conversation._id,
-            senderId: user._id,
+            senderId: user.id,
         });
     };
 
     return (
         <div className="chat-window">
-            {/* HEADER */}
+
             <div className="chat-header">
                 <img
-                    src={conversation.otherUser.profilePicture || "/default-avatar.png"}
+                    src={conversation.otherUser?.profilePicture || "/default-avatar.png"}
                     className="chat-header-avatar"
                 />
-                <span className="chat-header-name">
-                    {conversation.otherUser.username}
-                </span>
+                <span>{conversation.otherUser?.username}</span>
             </div>
 
-            {/* MESSAGES */}
             <div className="chat-messages">
-                {messages.map((msg, i) => (
-                    <MessageBubble
-                        key={i}
-                        message={msg}
-                        isOwn={msg.sender === user._id}
-                    />
-                ))}
+                {messages.map((msg, i) => {
+                    const senderId = msg.sender?.id || msg.sender;
+                    return (
+                        <MessageBubble
+                            key={i}
+                            message={msg}
+                            isOwn={senderId === user.id}
+                        />
+                    );
+                })}
 
                 {typing && (
                     <div className="typing-indicator">
@@ -125,7 +134,6 @@ export default function ChatWindow({ conversation, user }) {
                 <div ref={bottomRef}></div>
             </div>
 
-            {/* INPUT BAR */}
             <div className="chat-input">
                 <input
                     type="text"

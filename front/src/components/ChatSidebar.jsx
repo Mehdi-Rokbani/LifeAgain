@@ -10,9 +10,17 @@ export default function ChatSidebar({ userId, onSelectConversation }) {
     useEffect(() => {
         const fetchConversations = async () => {
             try {
+                const token = localStorage.getItem("token");
+
                 const res = await axios.get(
-                    `http://localhost:5000/api/conversations/${userId}/conversations`
+                    `http://localhost:5000/api/conversations`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        }
+                    }
                 );
+
                 setConversations(res.data);
             } catch (err) {
                 console.log("LOAD CONVERSATIONS ERROR:", err);
@@ -25,7 +33,6 @@ export default function ChatSidebar({ userId, onSelectConversation }) {
     return (
         <div className="chat-sidebar">
 
-            {/* SEARCH BAR */}
             <div className="chat-search">
                 <input
                     type="text"
@@ -35,7 +42,6 @@ export default function ChatSidebar({ userId, onSelectConversation }) {
                 />
             </div>
 
-            {/* CONVERSATION LIST */}
             <div className="chat-list">
                 {conversations
                     .filter((c) =>

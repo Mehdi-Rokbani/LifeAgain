@@ -1,12 +1,7 @@
 import "../assets/styles/chat.css";
 
 export default function ChatItem({ conversation, onClick }) {
-    const {
-        otherUser,
-        lastMessage,
-        updatedAt,
-        unread,
-    } = conversation;
+    const { otherUser, lastMessage, updatedAt, unread } = conversation;
 
     return (
         <div className="chat-item" onClick={onClick}>
@@ -33,12 +28,7 @@ export default function ChatItem({ conversation, onClick }) {
                 </div>
             </div>
 
-            {/* UNREAD BADGE */}
-            {unread > 0 && (
-                <div className="chat-item-unread">
-                    {unread}
-                </div>
-            )}
+            {unread > 0 && <div className="chat-item-unread">{unread}</div>}
         </div>
     );
 }
