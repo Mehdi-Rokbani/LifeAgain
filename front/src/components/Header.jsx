@@ -2,8 +2,12 @@ import React from "react";
 import { Link } from "react-router-dom";
 import "../assets/styles/Header.css";
 import { FaUser, FaSearch, FaHeart, FaShoppingCart } from "react-icons/fa";
+import { AuthContext } from '../context/AuthContext';
+import { useContext } from 'react';
+
 
 export default function Header() {
+    const { user } = useContext(AuthContext);
     return (
         <header className="header">
             {/* LOGO */}
@@ -23,11 +27,23 @@ export default function Header() {
 
             {/* ICONS */}
             <div className="header-icons">
-                <FaUser className="icon" />
-                <FaSearch className="icon" />
-                <FaHeart className="icon" />
-                <FaShoppingCart className="icon" />
+                <Link to={user ? "/profile" : "/login"}>
+                    <FaUser className="icon" />
+                </Link>
+
+                <Link to="/">
+                    <FaSearch className="icon" />
+                </Link>
+
+                <Link to="/favorites">
+                    <FaHeart className="icon" />
+                </Link>
+
+                <Link to={user ? "/cart" : "/login"}>
+                    <FaShoppingCart className="icon" />
+                </Link>
             </div>
+
         </header>
     );
 }

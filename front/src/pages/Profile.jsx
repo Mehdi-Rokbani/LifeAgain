@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import "../assets/styles/profile.css";
-
+import React from "react";
 import { useUpdateProfile } from "../hooks/useUpdateProfile";
 import { useUploadPFP } from "../hooks/useUploadPFP";
 import { useAddress } from "../hooks/useAddress";

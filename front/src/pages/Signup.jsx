@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useSingup } from "../hooks/useSignup";
 import "../assets/styles/auth.css";
 import lifeagain from "../assets/lifeagain.png";
-
+import React from "react";
 export default function Signup() {
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");

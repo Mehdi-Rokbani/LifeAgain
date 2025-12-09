@@ -8,23 +8,43 @@ const commandeSchema = new mongoose.Schema(
             required: true,
         },
 
-        listing: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Listing",
-            required: true,
-        },
+        // ⭐ NOUVEAU : Plusieurs produits au lieu d'un seul
+        items: [
+            {
+                listing: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Listing",
+                    required: true,
+                },
+                quantity: {
+                    type: Number,
+                    required: true,
+                    min: 1,
+                },
+                price: {
+                    type: Number,
+                    required: true,
+                },
+            }
+        ],
 
         address: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Address",
-            required: true,
         },
 
-        quantity: {
-            type: Number,
-            required: true,
-            min: [1, "Quantity must be at least 1"],
-            default: 1,
+        // ⭐ NOUVEAU : Informations de facturation du formulaire
+        billingDetails: {
+            firstName: { type: String, required: true },
+            lastName: { type: String, required: true },
+            companyName: String,
+            country: { type: String, required: true },
+            streetAddress: { type: String, required: true },
+            city: { type: String, required: true },
+            province: String,
+            zipCode: { type: String, required: true },
+            phone: { type: String, required: true },
+            email: { type: String, required: true },
         },
 
         totalPrice: {
@@ -35,7 +55,7 @@ const commandeSchema = new mongoose.Schema(
 
         paymentMethod: {
             type: String,
-            enum: ["cash", "card", "paypal", "transfer"],
+            enum: ["cash", "bank", "card", "paypal", "transfer"],
             default: "cash",
         },
 
@@ -65,16 +85,20 @@ const commandeSchema = new mongoose.Schema(
             type: Date,
             default: null,
         },
+
+        // ⭐ NOUVEAU : Numéro de commande unique
+        orderNumber: {
+            type: String,
+            unique: true,
+        },
     },
     { timestamps: true }
 );
 
-// Automatically calculate total price if not provided
-commandeSchema.pre("validate", async function (next) {
-    if (!this.totalPrice && this.listing && this.quantity) {
-        const Listing = mongoose.model("Listing");
-        const product = await Listing.findById(this.listing);
-        if (product) this.totalPrice = product.price * this.quantity;
+// Génère un numéro de commande unique avant la sauvegarde
+commandeSchema.pre("save", function (next) {
+    if (!this.orderNumber) {
+        this.orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
     }
     next();
 });

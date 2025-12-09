@@ -32,11 +32,10 @@ const listingSchema = new mongoose.Schema(
         // 🔹 Relations
         images: [
             {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "Image",
+                type: String,
+                trim: true
             },
         ],
-
 
         category: {
             type: mongoose.Schema.Types.ObjectId,

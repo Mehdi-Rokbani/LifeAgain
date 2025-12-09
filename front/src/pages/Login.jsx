@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import "../assets/styles/auth.css";
 import { useLogin } from "../hooks/useLogin";
 import lifeagain from "../assets/lifeagain.png";
-
+import React from "react";
 export default function Login() {
     const [form, setForm] = useState({ email: "", password: "" });
     const { login, Loading, Error } = useLogin();

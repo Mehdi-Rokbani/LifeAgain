@@ -1,7 +1,7 @@
 import ChatSidebar from "../components/ChatSidebar";
 import ChatWindow from "../components/ChatWindow";
 import { useState } from "react";
-
+import React from "react";
 export default function Chat() {
     const authData = JSON.parse(localStorage.getItem("user"));
     const user = authData?.user || authData;   // supports both formats

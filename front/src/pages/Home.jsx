@@ -6,14 +6,14 @@ import "../assets/styles/home.css";
 import { AuthContext } from '../context/AuthContext';
 import { useContext } from 'react';
 import { Link } from "react-router-dom";
-
+import Header from "../components/Header";
 export default function Home() {
   const { categories, loading } = useCategories();
-  const { storedUser } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
 
   return (
     <div className="home">
-
+      <Header />
       {/* Hero Section */}
       <section className="hero-banner">
         <div className="hero-content">
@@ -29,7 +29,7 @@ export default function Home() {
             </p>
             <button className="hero-btn">
               <Link
-                to={storedUser ? "/products" : "/login"}
+                to={user ? "/shop" : "/login"}
                 className="hero-btn"
                 style={{ textDecoration: "none", color: "inherit" }}
               >
@@ -69,7 +69,7 @@ export default function Home() {
                 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut elit tel
               </p>
               <button className="sale-btn"><Link
-                to={storedUser ? "/products" : "/login"}
+                to={user ? "/products" : "/login"}
                 className="hero-btn"
                 style={{ textDecoration: "none", color: "inherit" }}
               >
