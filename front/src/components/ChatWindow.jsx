@@ -3,7 +3,7 @@ import MessageBubble from "./MessageBubble";
 import "../assets/styles/chatwindow.css";
 import axios from "axios";
 import { socket } from "../socket";
-
+import React from "react";
 export default function ChatWindow({ conversation, user }) {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");

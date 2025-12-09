@@ -1,5 +1,5 @@
 import "../assets/styles/chatwindow.css";
-
+import React from "react";
 export default function MessageBubble({ message, isOwn }) {
     const time = new Date(message.createdAt || Date.now()).toLocaleTimeString([], {
         hour: "2-digit",

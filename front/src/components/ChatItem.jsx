@@ -1,5 +1,5 @@
 import "../assets/styles/chat.css";
-
+import React from "react";
 export default function ChatItem({ conversation, onClick }) {
     const { otherUser, lastMessage, updatedAt, unread } = conversation;
 

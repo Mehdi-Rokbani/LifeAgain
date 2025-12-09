@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import ChatItem from "./ChatItem";
 import "../assets/styles/chat.css";
-
+import React from "react";
 export default function ChatSidebar({ userId, onSelectConversation }) {
     const [search, setSearch] = useState("");
     const [conversations, setConversations] = useState([]);
