@@ -3,33 +3,25 @@ import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import Chat from "./pages/chat";
+import Home from "./pages/Home";
+import { AuthContext } from './context/AuthContext';
+import { useContext } from 'react';
 export default function App() {
+    const { storedUser } = useContext(AuthContext);
     return (
         <Router>
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/chat" element={<Chat />} />
+                {storedUser && (<Route path="/profile" element={<Profile />} />)}
+                {!storedUser && (<Route path="/profile" element={<Login />} />)}
+                {storedUser && (<Route path="/chat" element={<Chat />} />)}
+                {!storedUser && (<Route path="/chat" element={<Login />} />)}
+
             </Routes>
         </Router>
     );
 }
 
-// Simple temporary home page
-function Home() {
-    return (
-        <div style={{
-            width: "100%",
-            height: "100vh",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            fontSize: "24px",
-            fontWeight: "bold"
-        }}>
-            Home Page
-        </div>
-    );
-}
+

@@ -4,33 +4,28 @@ const categorySchema = new mongoose.Schema(
     {
         name: {
             type: String,
-            required: [true, "Category name is required"],
-            trim: true,
+            required: true,
             unique: true,
-            maxlength: 50,
+            trim: true,
         },
 
-        icon: {
-            type: String, // URL or icon name (e.g., "fa-car" or "https://cdn.com/icon.png")
-            trim: true,
+        image: {
+            type: String, // URL of uploaded image (Cloudinary, Firebase, local, etc.)
             default: "",
         },
 
         parentCategory: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Category",
-            default: null, // null → top-level category
+            default: null,
         },
 
         isActive: {
             type: Boolean,
             default: true,
-        },
+        }
     },
     { timestamps: true }
 );
-
-// Unique index for category name
-categorySchema.index({ name: 1 }, { unique: true });
 
 export default mongoose.model("Category", categorySchema, "Category");

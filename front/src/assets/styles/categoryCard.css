@@ -1,0 +1,36 @@
+.cat-card {
+    min-width: 110px;
+    height: 140px;
+    background: white;
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+}
+
+.cat-icon {
+    width: 60px;
+    height: 60px;
+    background: #ffe8c7;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.cat-icon img {
+    width: 60%;
+    height: 60%;
+    object-fit: contain;
+}
+
+.cat-name {
+    font-size: 15px;
+    color: #333;
+    font-weight: 500;
+}
