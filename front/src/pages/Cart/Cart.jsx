@@ -2,6 +2,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePanier } from '../../context/PanierContext';
 import './Cart.css';
+import Header from '../../components/Header/Header';
+import '../../components/Header/Header.css';
 
 const Cart = () => {
     const navigate = useNavigate();
@@ -25,6 +27,8 @@ const Cart = () => {
 
     return (
         <div className="cart-page">
+
+            <Header />
             {/* Hero Section */}
             <div className="cart-hero">
                 <h1>Cart</h1>
@@ -66,14 +70,14 @@ const Cart = () => {
                                     <td className="cart-price">{item.price} TND</td>
                                     <td>
                                         <div className="quantity-control">
-                                            <button 
+                                            <button
                                                 onClick={() => updateQuantity(item.product._id, item.quantity - 1)}
                                                 disabled={loading || item.quantity <= 1}
                                             >
                                                 -
                                             </button>
                                             <span>{item.quantity}</span>
-                                            <button 
+                                            <button
                                                 onClick={() => updateQuantity(item.product._id, item.quantity + 1)}
                                                 disabled={loading}
                                             >
@@ -85,7 +89,7 @@ const Cart = () => {
                                         {(item.price * item.quantity).toFixed(2)} TND
                                     </td>
                                     <td>
-                                        <button 
+                                        <button
                                             className="btn-remove"
                                             onClick={() => removeProduct(item.product._id)}
                                             disabled={loading}
@@ -110,7 +114,7 @@ const Cart = () => {
                         <span>Total</span>
                         <span className="total-price">{totalPrice.toFixed(2)} TND</span>
                     </div>
-                    <button 
+                    <button
                         className="btn-checkout"
                         onClick={() => navigate('/checkout')}
                     >

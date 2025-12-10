@@ -46,22 +46,18 @@ const listingSchema = new mongoose.Schema(
         seller: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
-            required: true,
         },
 
         address: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Address",
-            required: true,
         },
 
-        // 🔹 Optional attributes
         status: {
             type: String,
             enum: ["available", "sold", "archived"],
             default: "available",
         },
-
 
         views: {
             type: Number,
@@ -73,7 +69,13 @@ const listingSchema = new mongoose.Schema(
             default: 0,
         },
 
-        // 🔹 GeoJSON location (for nearby search)
+        // 🔥 NOUVEAU: Adresse textuelle (ce que l'utilisateur tape)
+        locationText: {
+            type: String,
+            trim: true,
+        },
+
+        // Coordonnées géographiques (pour les recherches géospatiales)
         location: {
             type: {
                 type: String,
@@ -82,7 +84,7 @@ const listingSchema = new mongoose.Schema(
             },
             coordinates: {
                 type: [Number], // [longitude, latitude]
-                default: [0, 0],
+                default: [10.1815, 36.8065], // Tunis par défaut
             },
         },
     },

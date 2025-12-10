@@ -4,14 +4,14 @@
 }
 
 /* Hero Banner Section */
-.hero-banner {
+.hero-banner1 {
     background: linear-gradient(135deg, #FFB84D 0%, #FFA940 100%);
     padding: 4rem 2rem;
     position: relative;
     overflow: hidden;
 }
 
-.hero-banner::before {
+.hero-banner1::before {
     content: '';
     position: absolute;
     bottom: -50px;
@@ -395,7 +395,7 @@
 }
 
 @media (max-width: 640px) {
-    .hero-banner {
+    .hero-banner1 {
         padding: 3rem 1rem;
     }
 

@@ -4,10 +4,9 @@ dotenv.config();
 
 const connectDB = async () => {
     try {
-        await mongoose.connect(process.env.URL, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-        });
+        // With recent MongoDB Node driver / Mongoose versions these options
+        // are no longer needed and are ignored; connect using the URI only.
+        await mongoose.connect(process.env.URL);
         console.log("✅ MongoDB connected successfully");
     } catch (error) {
         console.error("❌ MongoDB connection error:", error.message);

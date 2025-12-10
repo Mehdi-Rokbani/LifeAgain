@@ -10,41 +10,37 @@ import Shop from "./pages/Shop/Shop";
 import Cart from "./pages/Cart/Cart";
 import Checkout from "./pages/Checkout/Checkout";
 
+// From eyazagd branch
+import CreateAd from "./pages/CreateAd";
+import ListingDetail from "./pages/ListingDetail";
+import ListingsList from "./pages/ListingList";
+import ComparePage from "./pages/ComparePage";
+
 import { AuthContext } from "./context/AuthContext";
 
 export default function App() {
-    const { user } = useContext(AuthContext); // ⭐ Correct value from context
+  const { user } = useContext(AuthContext);
 
-    console.log("Stored User in App.jsx:", user);
+  console.log("Stored User in App.jsx:", user);
 
-    return (
-        <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Home />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/login" element={<Login />} />
+  return (
+    <Routes>
+      {/* ---------------- PUBLIC ROUTES ---------------- */}
+      <Route path="/" element={<Home />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route path="/login" element={<Login />} />
 
-            {/* Protected routes */}
-            <Route
-                path="/profile"
-                element={user ? <Profile /> : <Login />}
-            />
-            <Route
-                path="/chat"
-                element={user ? <Chat /> : <Login />}
-            />
-            <Route
-                path="/shop"
-                element={user ? <Shop /> : <Login />}
-            />
-            <Route
-                path="/cart"
-                element={user ? <Cart /> : <Login />}
-            />
-            <Route
-                path="/checkout"
-                element={user ? <Checkout /> : <Login />}
-            />
-        </Routes>
-    );
+      {/* eyazagd public routes */}
+      <Route path="/shop" element={<ListingsList />} />
+      <Route path="/listings/:id" element={<ListingDetail />} />
+      <Route path="/compare/:id" element={<ComparePage />} />
+      <Route path="/create-ad" element={<CreateAd />} />
+
+      {/* ---------------- PROTECTED ROUTES ---------------- */}
+      <Route path="/profile" element={user ? <Profile /> : <Login />} />
+      <Route path="/chat" element={user ? <Chat /> : <Login />} />
+      <Route path="/cart" element={user ? <Cart /> : <Login />} />
+      <Route path="/checkout" element={user ? <Checkout /> : <Login />} />
+    </Routes>
+  );
 }
