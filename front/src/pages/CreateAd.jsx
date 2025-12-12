@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import "./CreatedAd.css";
-
+import Header from "../components/Header";
 import { useCategories } from "../hooks/useCategories";
 import { useAddress } from "../hooks/useAddress";
 import { AuthContext } from "../context/AuthContext";
@@ -16,7 +16,6 @@ export default function CreateAd() {
   const [addresses, setAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState("");
 
-  // FORM STATES
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
@@ -46,11 +45,9 @@ export default function CreateAd() {
   }, []);
 
   // ============================
-  // FILTER PARENT CATEGORIES
+  // PARENT CATEGORIES
   // ============================
-  const parentCategories = categories.filter(
-    (cat) => !cat.parentCategory
-  );
+  const parentCategories = categories.filter(cat => !cat.parentCategory);
 
   // ============================
   // COVER UPLOAD
@@ -76,11 +73,8 @@ export default function CreateAd() {
       return;
     }
 
-    setPhotos((prev) => [...prev, ...newFiles]);
-    setPhotoPreviews((prev) => [
-      ...prev,
-      ...newFiles.map((f) => URL.createObjectURL(f)),
-    ]);
+    setPhotos(prev => [...prev, ...newFiles]);
+    setPhotoPreviews(prev => [...prev, ...newFiles.map(f => URL.createObjectURL(f))]);
 
     e.target.value = "";
   };
@@ -88,8 +82,8 @@ export default function CreateAd() {
   const removePhoto = (index) => {
     URL.revokeObjectURL(photoPreviews[index]);
 
-    setPhotos((prev) => prev.filter((_, i) => i !== index));
-    setPhotoPreviews((prev) => prev.filter((_, i) => i !== index));
+    setPhotos(prev => prev.filter((_, i) => i !== index));
+    setPhotoPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const removeCover = () => {
@@ -142,13 +136,16 @@ export default function CreateAd() {
     fd.append("price", price);
     fd.append("category", category);
     fd.append("condition", condition);
-
     fd.append("address", selectedAddress);
     fd.append("phone", user.phone || phone);
     fd.append("seller", user.id);
 
     if (cover) fd.append("cover", cover);
     photos.forEach((p) => fd.append("photos", p));
+
+    // DEBUG LOGS FOR TESTING
+    console.log("🔥 COVER FILE SENT:", cover);
+    console.log("🔥 PHOTOS SENT:", photos);
 
     try {
       const res = await fetch("http://localhost:5000/api/listings", {
@@ -179,8 +176,7 @@ export default function CreateAd() {
   // ============================
   return (
     <div className="create-page">
-
-      {/* BANNER */}
+      <Header></Header>
       <div className="hero-banner">
         <div className="hero-text">
           <h1>Créer une annonce</h1>
@@ -190,7 +186,13 @@ export default function CreateAd() {
 
       <div className="form-wrapper">
         <div className="form-container">
-          <form className="create-grid" onSubmit={handleSubmit}>
+
+          {/* IMPORTANT: encType added */}
+          <form
+            className="create-grid"
+            onSubmit={handleSubmit}
+            encType="multipart/form-data"
+          >
 
             {/* TITLE */}
             <div className="field">
@@ -230,8 +232,7 @@ export default function CreateAd() {
               />
             </div>
 
-            {/* COVER */}
-            {/* COVER */}
+            {/* COVER IMAGE */}
             <div className="field">
               <label>Photo de couverture *</label>
 
@@ -252,8 +253,6 @@ export default function CreateAd() {
               )}
             </div>
 
-
-            {/* PHOTOS */}
             {/* ADDITIONAL PHOTOS */}
             <div className="field">
               <label>Photos supplémentaires</label>
@@ -277,7 +276,6 @@ export default function CreateAd() {
                 ))}
               </div>
             </div>
-
 
             {/* PRICE */}
             <div className="field">
@@ -341,10 +339,11 @@ export default function CreateAd() {
               )}
             </div>
 
-            {/* SUBMIT */}
+            {/* SUBMIT BUTTON */}
             <button className="submit-btn" disabled={isSubmitting}>
               {isSubmitting ? "Publication..." : "Publier l'annonce"}
             </button>
+
           </form>
         </div>
       </div>

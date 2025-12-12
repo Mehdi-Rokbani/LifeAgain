@@ -1,5 +1,6 @@
 import "../assets/styles/chatwindow.css";
 import React from "react";
+
 export default function MessageBubble({ message, isOwn }) {
     const time = new Date(message.createdAt || Date.now()).toLocaleTimeString([], {
         hour: "2-digit",
@@ -9,7 +10,7 @@ export default function MessageBubble({ message, isOwn }) {
     return (
         <div className={`bubble-row ${isOwn ? "own" : ""}`}>
             <div className="bubble">
-                {message.text}
+                {message.content}
 
                 <div className="bubble-time">
                     {time}

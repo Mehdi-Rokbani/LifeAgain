@@ -160,19 +160,22 @@ export default function ListingsList() {
         <>
           <div className={`products-container ${viewMode}`}>
             {currentListings.map((listing) => {
-              // CORRECTION : Gestion sécurisée des images
-              const coverImage = listing.images?.find?.(img => img.isCover) || listing.images?.[0];
+
+              // CORRECTION : images are now STRINGS
+              const coverImage = Array.isArray(listing.images) ? listing.images[0] : null;
 
               return (
                 <div key={listing._id} className="product-card">
                   <Link to={`/listings/${listing._id}`} className="product-link">
+
                     <div className="product-image">
                       {coverImage ? (
                         <img
-                          src={`http://localhost:5000${coverImage.url}`}
+                          src={`http://localhost:5000${coverImage}`}
                           alt={listing.title}
                           onError={(e) => {
-                            e.target.src = "https://via.placeholder.com/300x300?text=No+Image";
+                            e.target.src =
+                              "https://via.placeholder.com/300x300?text=No+Image";
                           }}
                         />
                       ) : (
@@ -190,16 +193,13 @@ export default function ListingsList() {
                     </div>
                   </Link>
 
-                  {/* Bouton de comparaison */}
-                  <Link
-                    to={`/listings/${listing._id}`}
-                    className="compare-btn"
-                  >
+                  <Link to={`/listings/${listing._id}`} className="compare-btn">
                     Détails
                   </Link>
                 </div>
               );
             })}
+
           </div>
 
           {/* Pagination */}

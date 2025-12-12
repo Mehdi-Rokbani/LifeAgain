@@ -1,10 +1,9 @@
-
-
 /* ===========================================================
-   CREATE LISTING
+   CREATE LISTING — WITH IMAGE MODEL STORAGE
 =========================================================== */
 import Listing from "../models/Listing.js";
 import Category from "../models/Category.js";
+import Image from "../models/Image.js";
 import mongoose from "mongoose";
 
 export const createListing = async (req, res) => {
@@ -19,14 +18,14 @@ export const createListing = async (req, res) => {
       address
     } = req.body;
 
-
+    // ----- VALIDATIONS -----
     if (!address) {
       return res.status(400).json({
         success: false,
         error: "Adresse requise"
       });
     }
-    // Validate required fields
+
     if (!title || !description || !price || !category || !address) {
       return res.status(400).json({
         success: false,
@@ -34,7 +33,6 @@ export const createListing = async (req, res) => {
       });
     }
 
-    // Validate price
     if (isNaN(price) || Number(price) <= 0) {
       return res.status(400).json({
         success: false,
@@ -42,7 +40,6 @@ export const createListing = async (req, res) => {
       });
     }
 
-    // Validate category ID
     if (!mongoose.Types.ObjectId.isValid(category)) {
       return res.status(400).json({
         success: false,
@@ -50,7 +47,6 @@ export const createListing = async (req, res) => {
       });
     }
 
-    // Validate address ID
     if (!mongoose.Types.ObjectId.isValid(address)) {
       return res.status(400).json({
         success: false,
@@ -58,22 +54,33 @@ export const createListing = async (req, res) => {
       });
     }
 
-    // Handle file uploads (local storage)
-    const coverFile = req.files?.cover?.[0]?.filename || null;
-    const photoFiles = req.files?.photos?.map(f => f.filename) || [];
+    // ==========================================================
+    // ---------------------- IMAGE LOGIC -----------------------
+    // ==========================================================
 
-    // Build images array (direct URLs)
-    const images = [];
+    const coverFile = req.files?.cover?.[0] || null;
+    const photoFiles = req.files?.photos || [];
 
-    if (coverFile) {
-      images.push(`/uploads/${coverFile}`);
+    if (!coverFile) {
+      return res.status(400).json({
+        success: false,
+        error: "Une photo de couverture est obligatoire"
+      });
     }
 
-    photoFiles.forEach((filename) => {
-      images.push(`/uploads/${filename}`);
+    // ONLY URLs inside Listing.images
+    const imageUrls = [];
+
+    imageUrls.push(`/uploads/${coverFile.filename}`);
+
+    photoFiles.forEach(file => {
+      imageUrls.push(`/uploads/${file.filename}`);
     });
 
-    // Create listing
+    // ==========================================================
+    // ------------------ CREATE LISTING ------------------------
+    // ==========================================================
+
     const listing = await Listing.create({
       title: title.trim(),
       description: description.trim(),
@@ -81,15 +88,41 @@ export const createListing = async (req, res) => {
       phone: phone || null,
       condition: condition || "used",
       category,
-      seller: req.user.id,         // Logged-in seller
-      address: address,                     // Address chosen by seller
-      images,                      // Array of URLs
+      seller: req.user.id,
+      address,
+      images: imageUrls,        // <-- URLs only (frontend uses this)
       locationText: "Tunisie",
       location: {
         type: "Point",
         coordinates: [10.1815, 36.8065]
       }
     });
+
+    // ==========================================================
+    // ----------- NOW STORE REAL IMAGES IN DB -----------------
+    // ==========================================================
+
+    const imageDocuments = [];
+
+    // cover (order = 0)
+    imageDocuments.push({
+      listing: listing._id,
+      url: `/uploads/${coverFile.filename}`,
+      isCover: true,
+      order: 0
+    });
+
+    // additional photos (order starts at 1)
+    photoFiles.forEach((file, index) => {
+      imageDocuments.push({
+        listing: listing._id,
+        url: `/uploads/${file.filename}`,
+        isCover: false,
+        order: index + 1
+      });
+    });
+
+    await Image.insertMany(imageDocuments);
 
     return res.status(201).json({
       success: true,
@@ -105,6 +138,56 @@ export const createListing = async (req, res) => {
     });
   }
 };
+
+
+///////////////////////////
+/* ===========================================================
+            update cover image wiwiwiwiwiw
+============================================================== */
+export const updateCoverImage = async (req, res) => {
+  try {
+    const listingId = req.params.id;
+
+    const listing = await Listing.findById(listingId);
+    if (!listing) {
+      return res.status(404).json({ success: false, error: "Annonce introuvable" });
+    }
+
+    const newCover = req.files?.cover?.[0];
+    if (!newCover) {
+      return res.status(400).json({ success: false, error: "Nouvelle image requise" });
+    }
+
+    const newUrl = `/uploads/${newCover.filename}`;
+
+    // Replace first element in Listing.images
+    listing.images[0] = newUrl;
+    await listing.save();
+
+    // Update Image model: remove old cover, set new one
+    await Image.updateMany(
+      { listing: listingId },
+      { $set: { isCover: false } }
+    );
+
+    await Image.create({
+      listing: listingId,
+      url: newUrl,
+      isCover: true,
+      order: 0
+    });
+
+    return res.json({
+      success: true,
+      message: "Image de couverture mise à jour",
+      images: listing.images
+    });
+
+  } catch (err) {
+    return res.status(500).json({ success: false, error: "Erreur serveur" });
+  }
+};
+
 
 
 /* ===========================================================
@@ -159,6 +242,99 @@ export const getListings = async (req, res) => {
     });
   }
 };
+
+
+/* ===========================================================
+
+                    add images wiwiwiiwi
+
+============================================================= */
+export const addListingImages = async (req, res) => {
+  try {
+    const listingId = req.params.id;
+
+    const listing = await Listing.findById(listingId);
+    if (!listing) {
+      return res.status(404).json({ success: false, error: "Annonce introuvable" });
+    }
+
+    const newPhotos = req.files?.photos || [];
+    if (newPhotos.length === 0) {
+      return res.status(400).json({ success: false, error: "Aucune image fournie" });
+    }
+
+    const baseOrder = listing.images.length; // cover is index 0
+
+    const newUrls = [];
+    const newImageDocs = [];
+
+    newPhotos.forEach((file, index) => {
+      const url = `/uploads/${file.filename}`;
+      newUrls.push(url);
+
+      newImageDocs.push({
+        listing: listingId,
+        url,
+        isCover: false,
+        order: baseOrder + index
+      });
+    });
+
+    listing.images.push(...newUrls);
+    await listing.save();
+
+    await Image.insertMany(newImageDocs);
+
+    return res.json({
+      success: true,
+      message: "Images ajoutées",
+      images: listing.images
+    });
+
+  } catch (err) {
+    return res.status(500).json({ success: false, error: "Erreur serveur" });
+  }
+};
+
+
+/* ===========================================================
+delete listing image wiwiwiwiwiw
+============================================================-*/
+export const deleteListingImage = async (req, res) => {
+  try {
+    const { listingId, imageId } = req.params;
+
+    const image = await Image.findById(imageId);
+    if (!image) {
+      return res.status(404).json({ success: false, error: "Image introuvable" });
+    }
+
+    // Prevent deleting cover without replacement
+    if (image.isCover) {
+      return res.status(400).json({
+        success: false,
+        error: "Impossible de supprimer l'image de couverture. Mettez-en une nouvelle d'abord."
+      });
+    }
+
+    const listing = await Listing.findById(listingId);
+    listing.images = listing.images.filter(url => url !== image.url);
+    await listing.save();
+
+    await image.deleteOne();
+
+    return res.json({
+      success: true,
+      message: "Image supprimée",
+      images: listing.images
+    });
+
+  } catch (err) {
+    return res.status(500).json({ success: false, error: "Erreur serveur" });
+  }
+};
+
+
 
 /* ===========================================================
    GET LISTING BY ID
@@ -399,10 +575,70 @@ export const compareListing = async (req, res) => {
   }
 };
 
+
+
+export const getSellerListings = async (req, res) => {
+  try {
+    const sellerId = req.user.id; // secure: take from token
+    
+    const listings = await Listing.find({ seller: sellerId })
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, listings });
+  } catch {
+    res.status(500).json({ success: false, error: "Erreur serveur" });
+  }
+};
+export const updateListing = async (req, res) => {
+  try {
+    const listing = await Listing.findById(req.params.id);
+
+    if (!listing) return res.status(404).json({ success: false });
+
+    if (listing.seller.toString() !== req.user.id)
+      return res.status(403).json({ success: false, error: "Not allowed" });
+
+    const fields = ["title", "description", "price", "condition", "category"];
+    fields.forEach(f => {
+      if (req.body[f] !== undefined) listing[f] = req.body[f];
+    });
+
+    await listing.save();
+
+    res.json({ success: true, listing });
+  } catch {
+    res.status(500).json({ success: false });
+  }
+};
+
+export const deleteListing = async (req, res) => {
+  try {
+    const listing = await Listing.findById(req.params.id);
+
+    if (!listing) return res.status(404).json({ success: false });
+
+    if (listing.seller.toString() !== req.user.id)
+      return res.status(403).json({ success: false });
+
+    await Image.deleteMany({ listing: req.params.id });
+    await listing.deleteOne();
+
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ success: false });
+  }
+};
+
 // Export par défaut pour les routes
 export default {
   createListing,
   getListings,
   getListingById,
-  compareListing
+  compareListing,
+  updateCoverImage,
+  addListingImages,
+  deleteListingImage,
+  getSellerListings,
+  updateListing,
+  deleteListing
 };

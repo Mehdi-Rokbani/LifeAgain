@@ -13,35 +13,52 @@ export const sendMessage = async (req, res) => {
             return res.status(400).json({ message: "Message exceeds 500 characters." });
         }
 
-        // Create the message using correct field names
+        // CREATE MESSAGE
         const message = await Message.create({
-            conversation: conversationId,   // FIXED
+            conversation: conversationId,
             sender: senderId,
-            content: text,                  // FIXED
+            content: text
         });
 
+        // FETCH CONVERSATION
         const conversation = await Conversation.findById(conversationId);
         if (!conversation) {
             return res.status(404).json({ message: "Conversation not found." });
         }
 
+        // UPDATE LAST MESSAGE FIELDS
         conversation.lastMessage = text;
         conversation.lastSender = senderId;
 
-        // Compute receiver
+        // MARK RECEIVER AS UNREAD
         const receiverId = conversation.participants.find(
             (id) => id.toString() !== senderId
         );
 
-        // Add unread
         if (receiverId && !conversation.unreadBy.includes(receiverId)) {
             conversation.unreadBy.push(receiverId);
         }
 
         await conversation.save();
 
-        // Emit socket
-        req.io.to(conversationId).emit("newMessage", message);
+        // -----------------------------
+        // 🔥 REAL-TIME CHAT WINDOW UPDATE
+        // -----------------------------
+        req.io.to(conversationId).emit("newMessage", {
+            ...message.toObject(),
+            sender: senderId
+        });
+
+        // -----------------------------
+        // 🔥 REAL-TIME SIDEBAR UPDATE
+        // -----------------------------
+        req.io.emit("conversationUpdated", {
+            conversationId: conversation._id.toString(),
+            lastMessage: text,
+            lastSender: senderId,
+            updatedAt: conversation.updatedAt,
+            unread: true
+        });
 
         return res.status(201).json(message);
 

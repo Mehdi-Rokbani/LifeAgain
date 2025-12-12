@@ -4,10 +4,11 @@ import "../assets/styles/chatwindow.css";
 import axios from "axios";
 import { socket } from "../socket";
 import React from "react";
+
 export default function ChatWindow({ conversation, user }) {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
-    const [typing, setTyping] = useState(false);
+    const [typingUser, setTypingUser] = useState(null);
 
     const bottomRef = useRef(null);
 
@@ -15,7 +16,9 @@ export default function ChatWindow({ conversation, user }) {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    // LOAD MESSAGES
+    // ============================================================
+    // LOAD MESSAGES WHEN OPENING A CONVERSATION
+    // ============================================================
     useEffect(() => {
         if (!conversation?._id) return;
 
@@ -32,6 +35,10 @@ export default function ChatWindow({ conversation, user }) {
 
                 setMessages(res.data);
                 scrollToBottom();
+
+                // Join socket room
+                socket.emit("joinConversation", conversation._id);
+
             } catch (err) {
                 console.log("LOAD MESSAGES ERROR:", err);
             }
@@ -40,68 +47,124 @@ export default function ChatWindow({ conversation, user }) {
         loadMessages();
     }, [conversation]);
 
-    // SOCKET LISTENERS
+    // ============================================================
+    // SOCKET LISTENERS (new messages + typing indicator)
+    // ============================================================
     useEffect(() => {
+        if (!conversation) return;
+
         const handleNewMessage = (msg) => {
+            const senderId =
+                typeof msg.sender === "string" ? msg.sender : msg.sender?._id;
+
+            // Ignore my own message because optimistic UI already added it
+            if (senderId === user._id || senderId === user.id) return;
+
             if (msg.conversation === conversation._id) {
                 setMessages(prev => [...prev, msg]);
                 scrollToBottom();
             }
         };
 
-        const handleTyping = (senderId) => {
-            if (senderId !== user.id) {
-                setTyping(true);
-                setTimeout(() => setTyping(false), 1500);
+
+        const handleTyping = ({ userId }) => {
+            if (userId !== user._id && userId !== user.id) {
+                setTypingUser(userId);
+
+                setTimeout(() => {
+                    setTypingUser(null);
+                }, 1200);
+            }
+        };
+
+        const stopTyping = ({ userId }) => {
+            if (userId !== user._id && userId !== user.id) {
+                setTypingUser(null);
             }
         };
 
         socket.on("newMessage", handleNewMessage);
         socket.on("typing", handleTyping);
+        socket.on("stopTyping", stopTyping);
 
         return () => {
             socket.off("newMessage", handleNewMessage);
             socket.off("typing", handleTyping);
+            socket.off("stopTyping", stopTyping);
         };
-    }, [conversation, user.id]);
+    }, [conversation, user._id, user.id]);
 
+    // ============================================================
     // SEND MESSAGE
+    // ============================================================
     const handleSend = async () => {
         if (!input.trim()) return;
 
-        const msg = {
+        const payload = {
             conversationId: conversation._id,
-            senderId: user.id,
-            text: input,
+            senderId: user._id,
+            text: input.trim(),
         };
 
-        console.log("Sending:", msg);
-        socket.emit("send_message", msg);
+        // ⚡ OPTIMISTIC UI UPDATE (shows instantly)
+        setMessages(prev => [
+            ...prev,
+            {
+                conversation: conversation._id,
+                sender: { _id: user._id },
+                content: input.trim(),
+                createdAt: new Date().toISOString()
+            }
+        ]);
+
+        scrollToBottom();
+
+        // stop typing animation
+        socket.emit("stopTyping", {
+            conversationId: conversation._id,
+            userId: user._id
+        });
 
         try {
             const res = await axios.post(
                 "http://localhost:5000/api/messages/send",
-                msg,
+                payload,
                 { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
             );
 
-            setMessages(prev => [...prev, res.data]); // always add server version
         } catch (err) {
             console.log("SEND MESSAGE ERROR:", err);
         }
 
         setInput("");
-        scrollToBottom();
     };
 
-    const onType = (e) => {
-        setInput(e.target.value);
+    // ============================================================
+    // TYPING INDICATOR
+    // ============================================================
+    let typingTimeout;
+
+    const handleTyping = (value) => {
+        setInput(value);
+
         socket.emit("typing", {
             conversationId: conversation._id,
-            senderId: user.id,
+            userId: user._id
         });
+
+        clearTimeout(typingTimeout);
+
+        typingTimeout = setTimeout(() => {
+            socket.emit("stopTyping", {
+                conversationId: conversation._id,
+                userId: user._id
+            });
+        }, 700);
     };
 
+    // ============================================================
+    // RENDER UI
+    // ============================================================
     return (
         <div className="chat-window">
 
@@ -109,23 +172,28 @@ export default function ChatWindow({ conversation, user }) {
                 <img
                     src={conversation.otherUser?.profilePicture || "/default-avatar.png"}
                     className="chat-header-avatar"
+                    alt=""
                 />
                 <span>{conversation.otherUser?.username}</span>
             </div>
 
             <div className="chat-messages">
                 {messages.map((msg, i) => {
-                    const senderId = msg.sender?.id || msg.sender;
+                    const senderId =
+                        typeof msg.sender === "string"
+                            ? msg.sender
+                            : msg.sender?._id;
+
                     return (
                         <MessageBubble
                             key={i}
                             message={msg}
-                            isOwn={senderId === user.id}
+                            isOwn={senderId === user._id || senderId === user.id}
                         />
                     );
                 })}
 
-                {typing && (
+                {typingUser && (
                     <div className="typing-indicator">
                         <span></span><span></span><span></span>
                     </div>
@@ -137,9 +205,9 @@ export default function ChatWindow({ conversation, user }) {
             <div className="chat-input">
                 <input
                     type="text"
-                    placeholder="Write a message..."
+                    placeholder="Write a message…"
                     value={input}
-                    onChange={onType}
+                    onChange={(e) => handleTyping(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 />
                 <button onClick={handleSend}>Send</button>

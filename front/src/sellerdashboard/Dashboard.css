@@ -1,0 +1,260 @@
+/* =========================================================
+   DASHBOARD LAYOUT
+========================================================= */
+
+.dashboard-container {
+    display: flex;
+    min-height: 100vh;
+    background: #f5f6fa;
+    font-family: "Inter", sans-serif;
+}
+
+/* =========================================================
+     SIDEBAR
+  ========================================================= */
+
+.dashboard-sidebar {
+    width: 260px;
+    background: #1f1f2e;
+    color: white;
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+}
+
+.dashboard-sidebar h2 {
+    font-size: 22px;
+    font-weight: 700;
+    text-align: left;
+    letter-spacing: 0.5px;
+}
+
+.dashboard-sidebar nav {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.dashboard-sidebar nav a {
+    color: #d9d9e6;
+    text-decoration: none;
+    padding: 10px 14px;
+    border-radius: 8px;
+    transition: 0.25s;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dashboard-sidebar nav a:hover,
+.dashboard-sidebar nav a.active {
+    background: #3d3d5c;
+    color: white;
+    padding-left: 18px;
+}
+
+/* Mobile responsive sidebar */
+@media (max-width: 900px) {
+    .dashboard-sidebar {
+        width: 200px;
+    }
+}
+
+@media (max-width: 700px) {
+    .dashboard-sidebar {
+        display: none;
+    }
+}
+
+/* =========================================================
+     DASHBOARD CONTENT AREA
+  ========================================================= */
+
+.dashboard-content {
+    flex: 1;
+    padding: 40px 50px;
+}
+
+.dashboard-content h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 25px;
+    color: #1f1f2e;
+}
+
+/* =========================================================
+     STATS BOXES (Overview page)
+  ========================================================= */
+
+.stats-boxes {
+    display: flex;
+    justify-content: flex-start;
+    gap: 25px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.stat-box {
+    width: 250px;
+    background: white;
+    border-radius: 12px;
+    padding: 20px 24px;
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.06);
+    transition: 0.2s;
+}
+
+.stat-box:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.stat-box h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #444;
+}
+
+.stat-box p {
+    font-size: 28px;
+    font-weight: 700;
+    color: #2d2ddf;
+}
+
+/* =========================================================
+     LISTINGS TABLE (MyListings)
+  ========================================================= */
+
+.listings-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.listings-table th,
+.listings-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+    font-size: 15px;
+}
+
+.listings-table th {
+    background: #f0f1f6;
+    color: #333;
+    font-weight: 600;
+}
+
+.listings-table tr:hover {
+    background-color: #f9f9fb;
+}
+
+.thumb {
+    width: 70px;
+    height: 70px;
+    border-radius: 6px;
+    object-fit: cover;
+    border: 1px solid #ddd;
+}
+
+/* Action buttons */
+.btn {
+    display: inline-block;
+    padding: 8px 14px;
+    background: #2d2ddf;
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+.btn:hover {
+    background: #1b1bb5;
+}
+
+/* =========================================================
+     EDIT LISTING PAGE
+  ========================================================= */
+
+.edit-form {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.06);
+    width: 100%;
+    max-width: 700px;
+}
+
+.edit-form label {
+    font-weight: 600;
+    margin-top: 20px;
+    display: block;
+    color: #333;
+}
+
+.edit-form input,
+.edit-form textarea {
+    width: 100%;
+    padding: 12px;
+    margin-top: 6px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 15px;
+    transition: 0.15s;
+}
+
+.edit-form input:focus,
+.edit-form textarea:focus {
+    outline: none;
+    border-color: #2d2ddf;
+}
+
+.edit-form textarea {
+    min-height: 120px;
+}
+
+/* Save button */
+.save-btn {
+    margin-top: 20px;
+    padding: 12px 20px;
+    background: #2d2ddf;
+    color: white;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.save-btn:hover {
+    background: #1b1bb5;
+}
+
+/* =========================================================
+     RESPONSIVE RULES
+  ========================================================= */
+
+@media (max-width: 900px) {
+    .dashboard-content {
+        padding: 30px;
+    }
+
+    .stat-box {
+        width: 200px;
+    }
+}
+
+@media (max-width: 600px) {
+    .stats-boxes {
+        flex-direction: column;
+    }
+
+    .stat-box {
+        width: 100%;
+    }
+}

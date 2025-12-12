@@ -1,11 +1,15 @@
-// routes/listingRoutes.js - SERVEUR Express
+// routes/listingRoutes.js - SERVER Express
 import express from "express";
 import multer from "multer";
-import listingController from "../controllers/listingController.js";
+//import listingController from "../controllers/listingController.js";
+import { protect } from "../middleware/auth.js";
 
+import { createListing,getListings,getListingById ,compareListing,updateCoverImage,addListingImages,deleteListingImage,getSellerListings,updateListing,deleteListing} from "../controllers/listingController.js";
 const router = express.Router();
 
-// ---------- MULTER CONFIGURATION ----------
+// --------------------------------------------------------------
+// ⚙️ MULTER CONFIGURATION
+// --------------------------------------------------------------
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "uploads/");
@@ -14,49 +18,79 @@ const storage = multer.diskStorage({
     cb(null, Date.now() + "-" + file.originalname);
   },
 });
+router.get("/seller/me", protect, getSellerListings);
+router.put("/:id", protect, updateListing);
+router.delete("/:id", protect, deleteListing);
 
-const upload = multer({ 
+const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
-    // Accepter seulement les images
-    if (file.mimetype.startsWith('image/')) {
+    if (file.mimetype.startsWith("image/"))
       cb(null, true);
-    } else {
-      cb(new Error('Seules les images sont autorisées!'), false);
-    }
+    else
+      cb(new Error("Seules les images sont autorisées!"), false);
   },
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-  }
+    fileSize: 5 * 1024 * 1024, // 5MB
+  },
 });
 
-// ---------- ROUTES API ----------
+// --------------------------------------------------------------
+// 📌 LISTING ROUTES
+// --------------------------------------------------------------
 
 // CREATE LISTING
 router.post(
   "/",
+  protect,
   upload.fields([
     { name: "cover", maxCount: 1 },
     { name: "photos", maxCount: 8 },
   ]),
-  listingController.createListing
+  createListing
 );
 
 // GET ALL LISTINGS
-router.get("/", listingController.getListings);
+router.get("/", getListings);
 
-// GET LISTING BY ID
-router.get("/:id", listingController.getListingById);
+// GET A SINGLE LISTING
+router.get("/:id", getListingById);
 
-// COMPARE LISTING (ANALYSE INTELLIGENTE AVEC DEEPSEEK)
-router.get("/:id/compare", listingController.compareListing);
+// AI COMPARISON
+router.get("/:id/compare", compareListing);
 
-// HEALTH CHECK - Pour tester la route
+// --------------------------------------------------------------
+// 📌 IMAGE MANAGEMENT ROUTES
+// --------------------------------------------------------------
+
+// UPDATE COVER IMAGE
+router.put(
+  "/:id/images/cover",
+  upload.fields([{ name: "cover", maxCount: 1 }]),
+  updateCoverImage
+);
+
+// ADD MORE IMAGES
+router.post(
+  "/:id/images",
+  upload.fields([{ name: "photos", maxCount: 8 }]),
+  addListingImages
+);
+
+// DELETE A SPECIFIC IMAGE
+router.delete(
+  "/:listingId/images/:imageId",
+  deleteListingImage
+);
+
+// --------------------------------------------------------------
+// HEALTH CHECK
+// --------------------------------------------------------------
 router.get("/health/test", (req, res) => {
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     message: "Listing routes working!",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 

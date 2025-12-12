@@ -21,20 +21,11 @@ import commandeRoutes from "./routes/commandeRoutes.js";
 // Socket handler
 import registerChatHandler from "./Socket/chatHandler.js";
 
-// Models
-import "./models/User.js";
-import "./models/Category.js";
-import "./models/Address.js";
-import "./models/Listing.js";
-import "./models/Panier.js";
-import "./models/Commande.js";
-
 dotenv.config();
 
-// ---------- Fix ES Modules (__dirname) ----------
+// ES module dirname fix
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-// ------------------------------------------------
 
 const app = express();
 app.use(express.json());
@@ -47,54 +38,74 @@ app.use(
     })
 );
 
-// Debug log
-app.use((req, res, next) => {
-    console.log(req.path, req.method);
-    next();
-});
-
-// Serve static files
-app.use("/assets", express.static(path.join(__dirname, "public/assets")));
-app.use("/uploads", express.static(path.join(__dirname, "uploads"))); // eyazagd branch feature
-
-// ------------------- API ROUTES -------------------
-app.use("/api/auth", authRoutes);
-app.use("/api/user", userRoutes);
-app.use("/api/categories", categoriesroutes);
-app.use("/api/conversations", conversationRoutes);
-app.use("/api/messages", messageRoutes);
-app.use("/api/panier", panierRoutes);
-app.use("/api/listings", listingRoutes);
-app.use("/api/commandes", commandeRoutes);
-
-// ---------------- SOCKET.IO SETUP -----------------
+// HTTP + SOCKET.IO
 const httpServer = createServer(app);
-
 const io = new SocketIOServer(httpServer, {
     cors: {
-        origin: "*",
+        origin: "http://localhost:5173",
         credentials: true,
     },
 });
 
-// Attach io to req for message notifications
+// -----------------------------
+// 1️⃣ Attach io BEFORE routes!!
+// -----------------------------
 app.use((req, res, next) => {
     req.io = io;
     next();
 });
 
+// Debug routes
+app.use((req, res, next) => {
+    console.log(req.method, req.path);
+    next();
+});
+
+// Static files
+app.use("/assets", express.static(path.join(__dirname, "public/assets")));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// -----------------------------
+// 2️⃣ API ROUTES (io available)
+// -----------------------------
+app.use("/api/auth", authRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/categories", categoriesroutes);
+app.use("/api/conversations", conversationRoutes);
+app.use("/api/messages", messageRoutes); // now req.io is defined inside controllers
+app.use("/api/panier", panierRoutes);
+app.use("/api/listings", listingRoutes);
+app.use("/api/commandes", commandeRoutes);
+
+// -----------------------------
+// 3️⃣ SOCKET.IO LOGIC
+// -----------------------------
 io.on("connection", (socket) => {
     console.log("🔌 User connected:", socket.id);
 
     socket.on("joinConversation", (conversationId) => {
         socket.join(conversationId);
-        console.log(`📌 User joined room: ${conversationId}`);
+        console.log(`📌 Joined room: ${conversationId}`);
+    });
+
+    socket.on("typing", ({ conversationId, userId }) => {
+        socket.to(conversationId).emit("typing", { userId });
+    });
+
+    socket.on("stopTyping", ({ conversationId, userId }) => {
+        socket.to(conversationId).emit("stopTyping", { userId });
     });
 
     registerChatHandler(io, socket);
+
+    socket.on("disconnect", () => {
+        console.log("🔌 User disconnected:", socket.id);
+    });
 });
 
-// ---------------- START SERVER ------------------
+// -----------------------------
+// 4️⃣ START SERVER
+// -----------------------------
 const PORT = process.env.PORT || 5000;
 
 connectDB().then(() => {
