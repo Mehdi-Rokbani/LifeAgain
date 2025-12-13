@@ -4,35 +4,46 @@ import { Routes, Route } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+/* ===================== PUBLIC PAGES ===================== */
+import Home from "./pages/Home";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
-import Profile from "./pages/Profile";
-import Chat from "./pages/chat";
-import Home from "./pages/Home";
-import Cart from "./pages/Cart/Cart";
-
-// eyazagd pages
-import CreateAd from "./pages/CreateAd";
-import ListingDetail from "./pages/ListingDetail";
 import ListingsList from "./pages/ListingList";
+import ListingDetail from "./pages/ListingDetail";
 import ComparePage from "./pages/ComparePage";
 
-// Seller Dashboard
+/* ===================== CLIENT ===================== */
+import Cart from "./pages/Cart/Cart";
+import Checkout from "./pages/Checkout/Checkout";
+import Profile from "./pages/Profile";
+import Chat from "./pages/chat";
+
+/* ===================== SELLER ===================== */
+import CreateAd from "./pages/CreateAd";
 import Overview from "./sellerdashboard/Overview";
 import MyListings from "./sellerdashboard/MyListings";
 import EditListing from "./sellerdashboard/EditListing";
 import Settings from "./sellerdashboard/Settings";
 
+/* ===================== ADMIN ===================== */
+import AdminLayout from "./admin/AdminLayout";
+import AdminDashboard from "./admin/AdminDashboard";
+import AdminUsers from "./admin/AdminUsers";
+import AdminListings from "./admin/AdminListings";
+import AdminCreateListing from "./admin/AdminCreateListing";
+import AdminCommandes from "./admin/AdminCommandes";
+
+
+/* ===================== AUTH ===================== */
 import { AuthContext } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
-import Checkout from "./pages/Checkout/Checkout";
 
 export default function App() {
   const { user } = useContext(AuthContext);
 
   return (
     <>
-      {/* 🔔 GLOBAL TOAST CONTAINER */}
+      {/* 🔔 GLOBAL TOASTS */}
       <ToastContainer
         position="top-right"
         autoClose={2500}
@@ -44,7 +55,9 @@ export default function App() {
       />
 
       <Routes>
-        {/* ---------------- PUBLIC ROUTES ---------------- */}
+        {/* ===================================================
+                            PUBLIC
+        =================================================== */}
         <Route path="/" element={<Home />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
@@ -53,7 +66,9 @@ export default function App() {
         <Route path="/listings/:id" element={<ListingDetail />} />
         <Route path="/compare/:id" element={<ComparePage />} />
 
-        {/* ---------------- CLIENT ROUTES ---------------- */}
+        {/* ===================================================
+                            CLIENT
+        =================================================== */}
         <Route
           path="/cart"
           element={
@@ -62,6 +77,7 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/checkout"
           element={
@@ -71,17 +87,9 @@ export default function App() {
           }
         />
 
-        {/* ---------------- SELLER ROUTES ---------------- */}
-        <Route
-          path="/create-ad"
-          element={
-            <ProtectedRoute allowedRoles={["seller"]}>
-              <CreateAd />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* ---------------- AUTHENTICATED ---------------- */}
+        {/* ===================================================
+                            AUTHENTICATED
+        =================================================== */}
         <Route
           path="/profile"
           element={
@@ -100,7 +108,18 @@ export default function App() {
           }
         />
 
-        {/* ---------------- SELLER DASHBOARD ---------------- */}
+        {/* ===================================================
+                            SELLER
+        =================================================== */}
+        <Route
+          path="/create-ad"
+          element={
+            <ProtectedRoute allowedRoles={["seller"]}>
+              <CreateAd />
+            </ProtectedRoute>
+          }
+        />
+
         <Route
           path="/dashboard"
           element={
@@ -136,6 +155,30 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* ===================================================
+                            ADMIN
+        =================================================== */}
+
+        {/* ---------------- ADMIN ROUTES ---------------- */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="listings" element={<AdminListings />} />
+          <Route path="listings/create" element={<AdminCreateListing />} />
+          <Route path="commandes" element={<AdminCommandes />} />
+        </Route>
+
+
+
+
       </Routes>
     </>
   );

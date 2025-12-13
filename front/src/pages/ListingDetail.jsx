@@ -24,6 +24,8 @@ export default function ListingDetail() {
   const auth = JSON.parse(localStorage.getItem("user"));
   const user = auth?.user || auth;
 
+  const isSeller = user?.role === "seller";
+
   // ---------------- MEMO ----------------
   const alreadyInCart = useMemo(() => {
     if (!panier || !listing) return false;
@@ -182,31 +184,32 @@ export default function ListingDetail() {
             {listing.price} <span>TND</span>
           </p>
 
-          <div className="product-actions">
-            <button className="btn contact-btn" onClick={startChat}>
-              💬 Contacter le vendeur
-            </button>
+          {/* ✅ ACTIONS ONLY FOR NON-SELLERS */}
+          {!isSeller && (
+            <div className="product-actions">
+              <button className="btn contact-btn" onClick={startChat}>
+                💬 Contacter le vendeur
+              </button>
 
-            <button
-              className={`btn compare-btn ${alreadyInCart ? "disabled" : ""}`}
-              onClick={handleAddToCart}
-              disabled={alreadyInCart}
-            >
-              {alreadyInCart ? "Déjà dans le panier" : "🛒 Ajouter au panier"}
-            </button>
+              <button
+                className={`btn compare-btn ${alreadyInCart ? "disabled" : ""}`}
+                onClick={handleAddToCart}
+                disabled={alreadyInCart}
+              >
+                {alreadyInCart ? "Déjà dans le panier" : "🛒 Ajouter au panier"}
+              </button>
 
-            <Link to={`/compare/${listing._id}`} className="btn compare-btn">
-              🔍 Comparer le prix
-            </Link>
-          </div>
+              <Link to={`/compare/${listing._id}`} className="btn compare-btn">
+                🔍 Comparer le prix
+              </Link>
+            </div>
+          )}
 
           {/* META INFO */}
           <div className="product-meta">
             <span className="meta-badge">👁 {listing.views} vues</span>
             <span className="meta-badge">📦 {listing.condition}</span>
-            <span className="meta-badge">
-              🗂 {listing.category?.name}
-            </span>
+            <span className="meta-badge">🗂 {listing.category?.name}</span>
             <span className="meta-badge">
               📅 {new Date(listing.createdAt).toLocaleDateString("fr-FR")}
             </span>

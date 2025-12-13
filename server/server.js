@@ -17,6 +17,7 @@ import messageRoutes from "./routes/messageRoutes.js";
 import panierRoutes from "./routes/panierRoutes.js";
 import listingRoutes from "./routes/listingRoutes.js";
 import commandeRoutes from "./routes/commandeRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
 
 // Socket handler
 import registerChatHandler from "./Socket/chatHandler.js";
@@ -76,6 +77,8 @@ app.use("/api/messages", messageRoutes); // now req.io is defined inside control
 app.use("/api/panier", panierRoutes);
 app.use("/api/listings", listingRoutes);
 app.use("/api/commandes", commandeRoutes);
+app.use("/api/admin", adminRoutes);
+
 
 // -----------------------------
 // 3️⃣ SOCKET.IO LOGIC

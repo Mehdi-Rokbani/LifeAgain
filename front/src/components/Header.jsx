@@ -28,16 +28,15 @@ export default function Header() {
             {/* NAVIGATION */}
             <nav className="header-nav">
                 <Link to="/">Home</Link>
-                <Link to="/categories">Categories</Link>
+
                 {user && user.role === 'seller' && (
                     <Link to="/dashboard">Dashboard</Link>
                 )}
-                {user && user.role === 'client' && (
+                {user && (
                     <Link to="/shop">Shop</Link>
                 )}
                 <Link to="/chat">Chat</Link>
-                <Link to="/about">About</Link>
-                <Link to="/contact">Contact</Link>
+
             </nav>
 
             {/* ICONS */}
@@ -80,13 +79,11 @@ export default function Header() {
                     <FaSearch className="icon" />
                 </Link>
 
-                <Link to="/favorites">
-                    <FaHeart className="icon" />
-                </Link>
+                {user && user.role === 'client' && (
+                    <Link to="/cart"><FaShoppingCart className="icon" /></Link>
+                )}
 
-                <Link to={user ? "/cart" : "/login"}>
-                    <FaShoppingCart className="icon" />
-                </Link>
+
 
             </div>
         </header>
