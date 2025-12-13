@@ -1,0 +1,101 @@
+.table-wrapper {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+
+.listings-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.listings-table th {
+    text-align: left;
+    font-weight: 600;
+    color: #555;
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+.listings-table td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+}
+
+.listing-thumb {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.no-thumb {
+    width: 60px;
+    height: 60px;
+    background: #eee;
+    border-radius: 8px;
+}
+
+/* STATUS */
+.status-badge {
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.status-badge.available {
+    background: #e7f9ed;
+    color: #1a7f37;
+}
+
+.status-badge.sold {
+    background: #fbeaea;
+    color: #b42318;
+}
+
+.status-badge.archived {
+    background: #f0f0f0;
+    color: #666;
+}
+
+/* ACTIONS */
+.actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* BUTTONS (shared style) */
+.btn {
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    padding: 8px 12px;
+}
+
+.btn.primary {
+    background: #ff7a00;
+    color: white;
+}
+
+.btn.secondary {
+    background: #eee;
+}
+
+.btn.danger {
+    background: #ff4d4f;
+    color: white;
+}
+
+.btn.small {
+    font-size: 13px;
+    padding: 6px 10px;
+}
+
+.btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}

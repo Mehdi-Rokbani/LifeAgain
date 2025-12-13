@@ -33,7 +33,7 @@ const addressSchema = new mongoose.Schema(
         country: {
             type: String,
             required: [true, "Country is required"],
-            trim: true
+            trim: true,
         },
 
         latitude: {

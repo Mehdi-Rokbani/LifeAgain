@@ -1,41 +1,51 @@
-import axios from 'axios';
+// src/services/commandeService.js
+import axios from "axios";
 
-const API_URL = 'http://localhost:5000/api/commandes';
+const API_URL = "http://localhost:5000/api/commandes";
 
 class CommandeService {
-    // Créer une commande depuis le panier
-    async createCommandeFromPanier(userId, billingDetails, paymentMethod, notes = '') {
-        try {
-            const response = await axios.post(API_URL, {
-                userId,
+    async createCommandeFromPanier(billingDetails, paymentMethod, notes = "") {
+        const token = localStorage.getItem("token");
+
+        const res = await axios.post(
+            API_URL,
+            {
                 billingDetails,
                 paymentMethod,
-                notes
-            });
-            return response.data;
-        } catch (error) {
-            throw error.response?.data || error.message;
-        }
+                notes,
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+
+        return res.data;
     }
 
-    // Récupérer les commandes d'un utilisateur
     async getCommandesByUser(userId) {
-        try {
-            const response = await axios.get(`${API_URL}/user/${userId}`);
-            return response.data;
-        } catch (error) {
-            throw error.response?.data || error.message;
-        }
+        const token = localStorage.getItem("token");
+
+        const res = await axios.get(`${API_URL}/user/${userId}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        return res.data;
     }
 
-    // Récupérer une commande par ID
     async getCommandeById(commandeId) {
-        try {
-            const response = await axios.get(`${API_URL}/${commandeId}`);
-            return response.data;
-        } catch (error) {
-            throw error.response?.data || error.message;
-        }
+        const token = localStorage.getItem("token");
+
+        const res = await axios.get(`${API_URL}/${commandeId}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        return res.data;
     }
 }
 

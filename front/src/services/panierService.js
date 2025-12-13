@@ -1,53 +1,37 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_URL = 'http://localhost:5000/api/panier';
+const API_URL = "http://localhost:5000/api/panier";
+
+const authHeader = () => ({
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
+});
 
 class PanierService {
-    // Récupérer le panier d'un utilisateur
-    async getPanierByUser(userId) {
-        try {
-            const response = await axios.get(`${API_URL}/user/${userId}`);
-            return response.data;
-        } catch (error) {
-            throw error.response?.data || error.message;
-        }
+    // 🔹 Get my active panier
+    async getMyPanier() {
+        const res = await axios.get(`${API_URL}/me`, {
+            headers: authHeader(),
+        });
+        return res.data;
     }
 
-    // Ajouter un produit au panier
-    async addProductToPanier(userId, productId) {
-        try {
-            const response = await axios.get(
-                `${API_URL}/user/${userId}/add-test/${productId}`
-            );
-            return response.data;
-        } catch (error) {
-            throw error.response?.data || error.message;
-        }
+    // 🔹 Add product (used → quantity = 1)
+    async addProduct(productId) {
+        const res = await axios.post(
+            `${API_URL}/add`,
+            { productId },
+            { headers: authHeader() }
+        );
+        return res.data;
     }
 
-    // Retirer un produit du panier
-    async removeProductFromPanier(userId, productId) {
-        try {
-            const response = await axios.delete(
-                `${API_URL}/user/${userId}/product/${productId}`
-            );
-            return response.data;
-        } catch (error) {
-            throw error.response?.data || error.message;
-        }
-    }
-
-    // Mettre à jour la quantité
-    async updateQuantity(userId, productId, quantity) {
-        try {
-            const response = await axios.put(
-                `${API_URL}/user/${userId}/product/${productId}`,
-                { quantity }
-            );
-            return response.data;
-        } catch (error) {
-            throw error.response?.data || error.message;
-        }
+    // 🔹 Remove product
+    async removeProduct(productId) {
+        const res = await axios.delete(
+            `${API_URL}/product/${productId}`,
+            { headers: authHeader() }
+        );
+        return res.data;
     }
 }
 

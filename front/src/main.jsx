@@ -15,6 +15,7 @@ createRoot(document.getElementById("root")).render(
       <AuthContextProvider>
         <PanierProvider>
           <App />
+          
         </PanierProvider>
       </AuthContextProvider>
     </BrowserRouter>

@@ -4,7 +4,7 @@ import multer from "multer";
 //import listingController from "../controllers/listingController.js";
 import { protect } from "../middleware/auth.js";
 
-import { createListing,getListings,getListingById ,compareListing,updateCoverImage,addListingImages,deleteListingImage,getSellerListings,updateListing,deleteListing} from "../controllers/listingController.js";
+import { createListing,getListings,incrementListingViews,getListingById,getImagesByListing ,compareListing,updateCoverImage,addListingImages,deleteListingImage,getSellerListings,updateListing,deleteListing} from "../controllers/listingController.js";
 const router = express.Router();
 
 // --------------------------------------------------------------
@@ -39,6 +39,10 @@ const upload = multer({
 // 📌 LISTING ROUTES
 // --------------------------------------------------------------
 
+
+router.get("/listing/:id", protect, getImagesByListing);
+
+
 // CREATE LISTING
 router.post(
   "/",
@@ -52,6 +56,9 @@ router.post(
 
 // GET ALL LISTINGS
 router.get("/", getListings);
+
+router.post("/:id/views", incrementListingViews);
+
 
 // GET A SINGLE LISTING
 router.get("/:id", getListingById);

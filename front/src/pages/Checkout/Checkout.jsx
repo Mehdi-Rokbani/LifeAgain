@@ -1,380 +1,207 @@
-import React, { useState } from 'react';
-import { usePanier } from '../../context/PanierContext';
-import { useNavigate } from 'react-router-dom';
-import commandeService from '../../services/commandeService'; // ← AJOUTE
-import './Checkout.css';
+// src/pages/Checkout/Checkout.jsx
+import React, { useEffect, useState } from "react";
+import { usePanier } from "../../context/PanierContext";
+import { useNavigate } from "react-router-dom";
+import { useAddress } from "../../hooks/useAddress";
+import commandeService from "../../services/commandeService";
+import { toast } from "react-toastify";
+import "./Checkout.css";
 
 const Checkout = () => {
     const { panier, totalPrice, itemCount, loadPanier } = usePanier();
+    const { getAddresses } = useAddress();
     const navigate = useNavigate();
-    const userId = "690fc01ccbb891b31ec1df69";
+
+    const [addresses, setAddresses] = useState([]);
+    const [selectedAddress, setSelectedAddress] = useState("");
 
     const [billingDetails, setBillingDetails] = useState({
-        firstName: '',
-        lastName: '',
-        companyName: '',
-        country: 'Tunisia',
-        streetAddress: '',
-        city: '',
-        province: '',
-        zipCode: '',
-        phone: '',
-        email: ''
+        firstName: "",
+        lastName: "",
+        phone: "",
+        email: "",
     });
 
-    const [paymentMethod, setPaymentMethod] = useState('bank');
-    const [errors, setErrors] = useState({});
-    const [isSubmitting, setIsSubmitting] = useState(false); // ← AJOUTE
+    const [loading, setLoading] = useState(false);
 
-    const handleChange = (e) => {
+    // --------------------------------------------------
+    // LOAD USER ADDRESSES
+    // --------------------------------------------------
+    useEffect(() => {
+        const fetchAddresses = async () => {
+            try {
+                const res = await getAddresses();
+                setAddresses(Array.isArray(res) ? res : []);
+            } catch {
+                setAddresses([]);
+            }
+        };
+
+        fetchAddresses();
+    }, []);
+
+    // --------------------------------------------------
+    // BILLING INPUT CHANGE
+    // --------------------------------------------------
+    const handleBillingChange = (e) => {
         const { name, value } = e.target;
-        setBillingDetails(prev => ({
+        setBillingDetails((prev) => ({
             ...prev,
-            [name]: value
+            [name]: value,
         }));
-        if (errors[name]) {
-            setErrors(prev => ({ ...prev, [name]: '' }));
-        }
     };
 
-    const validateForm = () => {
-        const newErrors = {};
+    // --------------------------------------------------
+    // SUBMIT ORDER
+    // --------------------------------------------------
+    const handleSubmit = async () => {
+        const selectedAddr = addresses.find((a) => a._id === selectedAddress);
 
-        if (!billingDetails.firstName.trim()) newErrors.firstName = 'First name is required';
-        if (!billingDetails.lastName.trim()) newErrors.lastName = 'Last name is required';
-        if (!billingDetails.streetAddress.trim()) newErrors.streetAddress = 'Street address is required';
-        if (!billingDetails.city.trim()) newErrors.city = 'Town / City is required';
-        if (!billingDetails.zipCode.trim()) newErrors.zipCode = 'ZIP code is required';
-        if (!billingDetails.phone.trim()) newErrors.phone = 'Phone is required';
-        
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!billingDetails.email.trim()) {
-            newErrors.email = 'Email is required';
-        } else if (!emailRegex.test(billingDetails.email)) {
-            newErrors.email = 'Invalid email format';
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    // ⭐ FONCTION CORRIGÉE
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        if (!validateForm()) {
-            alert('Please fill in all required fields');
+        if (!selectedAddr) {
+            toast.error("Please select a delivery address");
             return;
         }
 
-        if (itemCount === 0) {
-            alert('Your cart is empty!');
+        if (
+            !billingDetails.firstName ||
+            !billingDetails.lastName ||
+            !billingDetails.phone ||
+            !billingDetails.email
+        ) {
+            toast.error("Billing details incomplete");
             return;
         }
 
-        setIsSubmitting(true);
+        // 🔑 BACKEND-COMPATIBLE BILLING OBJECT
+        const billingToSend = {
+            firstName: billingDetails.firstName,
+            lastName: billingDetails.lastName,
+            phone: billingDetails.phone,
+            email: billingDetails.email,
+            streetAddress: selectedAddr.street,
+            city: selectedAddr.city,
+            zipCode: String(selectedAddr.postalCode),
+            country: selectedAddr.country || "Tunisia",
+        };
+
+        setLoading(true);
 
         try {
-            console.log('📦 Envoi de la commande...');
-            console.log('Billing Details:', billingDetails);
-            console.log('Payment Method:', paymentMethod);
-
-            // ⭐ APPEL API POUR CRÉER LA COMMANDE
             const result = await commandeService.createCommandeFromPanier(
-                userId,
-                billingDetails,
-                paymentMethod
+                billingToSend,
+                "cash"
             );
 
-            console.log('✅ Commande créée:', result);
-
-            // ⭐ RECHARGE LE PANIER (il sera vide maintenant)
             await loadPanier();
 
-            // Affiche le succès avec le numéro de commande
-            alert(`Order placed successfully! 🎉\n\nOrder Number: ${result.commande.orderNumber}\n\nThank you for your purchase!`);
-            
-            // Petit délai avant la redirection
-            setTimeout(() => {
-                navigate('/shop');
-            }, 500);
+            toast.success("Order placed successfully 🎉");
 
-        } catch (error) {
-            console.error('❌ Erreur:', error);
-            alert(`Error placing order: ${error.message || 'Something went wrong'}`);
+            setTimeout(() => navigate("/shop"), 1500);
+        } catch (err) {
+            toast.error(err?.message || "Order failed");
         } finally {
-            setIsSubmitting(false);
+            setLoading(false);
         }
     };
 
-    if (itemCount === 0) {
+    // --------------------------------------------------
+    // EMPTY CART
+    // --------------------------------------------------
+    if (!panier || itemCount === 0) {
         return (
             <div className="checkout-empty">
                 <h2>Your cart is empty</h2>
-                <p>Add some products before checking out</p>
-                <button onClick={() => navigate('/shop')} className="btn-shop">
-                    Continue Shopping
-                </button>
+                <button onClick={() => navigate("/shop")}>Go to shop</button>
             </div>
         );
     }
 
+    // --------------------------------------------------
+    // UI
+    // --------------------------------------------------
     return (
         <div className="checkout-page">
-            <div className="checkout-hero">
-                <h1>Checkout</h1>
-                <p className="breadcrumb">
-                    <span>Home</span> &gt; <span>Checkout</span>
-                </p>
-            </div>
+            <h1 className="checkout-title">Checkout</h1>
 
             <div className="checkout-container">
+                {/* BILLING */}
                 <div className="billing-section">
                     <h2>Billing details</h2>
-                    <form onSubmit={handleSubmit}>
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label>First Name *</label>
-                                <input
-                                    type="text"
-                                    name="firstName"
-                                    value={billingDetails.firstName}
-                                    onChange={handleChange}
-                                    className={errors.firstName ? 'error' : ''}
-                                    disabled={isSubmitting}
-                                />
-                                {errors.firstName && <span className="error-msg">{errors.firstName}</span>}
-                            </div>
-                            <div className="form-group">
-                                <label>Last Name *</label>
-                                <input
-                                    type="text"
-                                    name="lastName"
-                                    value={billingDetails.lastName}
-                                    onChange={handleChange}
-                                    className={errors.lastName ? 'error' : ''}
-                                    disabled={isSubmitting}
-                                />
-                                {errors.lastName && <span className="error-msg">{errors.lastName}</span>}
-                            </div>
-                        </div>
 
-                        <div className="form-group">
-                            <label>Company Name (Optional)</label>
-                            <input
-                                type="text"
-                                name="companyName"
-                                value={billingDetails.companyName}
-                                onChange={handleChange}
-                                disabled={isSubmitting}
-                            />
-                        </div>
+                    <input
+                        name="firstName"
+                        placeholder="First name"
+                        value={billingDetails.firstName}
+                        onChange={handleBillingChange}
+                    />
 
-                        <div className="form-group">
-                            <label>Country / Region *</label>
-                            <select
-                                name="country"
-                                value={billingDetails.country}
-                                onChange={handleChange}
-                                disabled={isSubmitting}
-                            >
-                                <option value="Tunisia">Tunisia</option>
-                                <option value="Algeria">Algeria</option>
-                                <option value="Morocco">Morocco</option>
-                                <option value="Libya">Libya</option>
-                                <option value="Egypt">Egypt</option>
-                            </select>
-                        </div>
+                    <input
+                        name="lastName"
+                        placeholder="Last name"
+                        value={billingDetails.lastName}
+                        onChange={handleBillingChange}
+                    />
 
-                        <div className="form-group">
-                            <label>Street address *</label>
-                            <input
-                                type="text"
-                                name="streetAddress"
-                                value={billingDetails.streetAddress}
-                                onChange={handleChange}
-                                placeholder="House number and street name"
-                                className={errors.streetAddress ? 'error' : ''}
-                                disabled={isSubmitting}
-                            />
-                            {errors.streetAddress && <span className="error-msg">{errors.streetAddress}</span>}
-                        </div>
+                    <input
+                        name="phone"
+                        placeholder="Phone"
+                        value={billingDetails.phone}
+                        onChange={handleBillingChange}
+                    />
 
-                        <div className="form-group">
-                            <label>Town / City *</label>
-                            <input
-                                type="text"
-                                name="city"
-                                value={billingDetails.city}
-                                onChange={handleChange}
-                                className={errors.city ? 'error' : ''}
-                                disabled={isSubmitting}
-                            />
-                            {errors.city && <span className="error-msg">{errors.city}</span>}
-                        </div>
+                    <input
+                        name="email"
+                        placeholder="Email"
+                        value={billingDetails.email}
+                        onChange={handleBillingChange}
+                    />
 
-                        <div className="form-group">
-                            <label>Province</label>
-                            <select
-                                name="province"
-                                value={billingDetails.province}
-                                onChange={handleChange}
-                                disabled={isSubmitting}
-                            >
-                                <option value="">Select Province</option>
-                                <option value="Tunis">Tunis</option>
-                                <option value="Sfax">Sfax</option>
-                                <option value="Sousse">Sousse</option>
-                                <option value="Ariana">Ariana</option>
-                            </select>
-                        </div>
-
-                        <div className="form-group">
-                            <label>ZIP code *</label>
-                            <input
-                                type="text"
-                                name="zipCode"
-                                value={billingDetails.zipCode}
-                                onChange={handleChange}
-                                className={errors.zipCode ? 'error' : ''}
-                                disabled={isSubmitting}
-                            />
-                            {errors.zipCode && <span className="error-msg">{errors.zipCode}</span>}
-                        </div>
-
-                        <div className="form-group">
-                            <label>Phone *</label>
-                            <input
-                                type="tel"
-                                name="phone"
-                                value={billingDetails.phone}
-                                onChange={handleChange}
-                                className={errors.phone ? 'error' : ''}
-                                disabled={isSubmitting}
-                            />
-                            {errors.phone && <span className="error-msg">{errors.phone}</span>}
-                        </div>
-
-                        <div className="form-group">
-                            <label>Email address *</label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={billingDetails.email}
-                                onChange={handleChange}
-                                className={errors.email ? 'error' : ''}
-                                disabled={isSubmitting}
-                            />
-                            {errors.email && <span className="error-msg">{errors.email}</span>}
-                        </div>
-                    </form>
+                    <h3>Delivery address</h3>
+                    <select
+                        value={selectedAddress}
+                        onChange={(e) => setSelectedAddress(e.target.value)}
+                    >
+                        <option value="">Select address</option>
+                        {addresses.map((addr) => (
+                            <option key={addr._id} value={addr._id}>
+                                {addr.street}, {addr.city}, {addr.country}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
+                {/* SUMMARY */}
                 <div className="order-summary">
-                    <div className="summary-card">
-                        <div className="summary-header">
-                            <span>Product</span>
-                            <span>Subtotal</span>
+                    <h3>Order summary</h3>
+
+                    {panier.items.map((item) => (
+                        <div key={item._id} className="summary-item">
+                            <span>
+                                {item.product?.title} × {item.quantity}
+                            </span>
+                            <span>
+                                {(item.price || item.product?.price || 0).toFixed(2)} TND
+                            </span>
                         </div>
+                    ))}
 
-                        <div className="summary-items">
-                            {panier?.items.map((item) => (
-                                <div key={item._id} className="summary-item">
-                                    <span className="item-name">
-                                        {item.product?.title || 'Product'} × {item.quantity}
-                                    </span>
-                                    <span className="item-price">
-                                        {(item.price * item.quantity).toFixed(2)} TND
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="summary-row">
-                            <span>Subtotal</span>
-                            <span>{totalPrice.toFixed(2)} TND</span>
-                        </div>
-
-                        <div className="summary-row total">
-                            <span>Total</span>
-                            <span className="total-price">{totalPrice.toFixed(2)} TND</span>
-                        </div>
-
-                        <div className="payment-methods">
-                            <div className="payment-option">
-                                <input
-                                    type="radio"
-                                    id="bank"
-                                    name="payment"
-                                    value="bank"
-                                    checked={paymentMethod === 'bank'}
-                                    onChange={(e) => setPaymentMethod(e.target.value)}
-                                    disabled={isSubmitting}
-                                />
-                                <label htmlFor="bank">
-                                    <strong>Direct Bank Transfer</strong>
-                                    <p>Make your payment directly into our bank account. Please use your Order ID as the payment reference.</p>
-                                </label>
-                            </div>
-
-                            <div className="payment-option">
-                                <input
-                                    type="radio"
-                                    id="cash"
-                                    name="payment"
-                                    value="cash"
-                                    checked={paymentMethod === 'cash'}
-                                    onChange={(e) => setPaymentMethod(e.target.value)}
-                                    disabled={isSubmitting}
-                                />
-                                <label htmlFor="cash">Cash On Delivery</label>
-                            </div>
-                        </div>
-
-                        <p className="privacy-policy">
-                            Your personal data will be used to support your experience throughout this website, to manage access to your account, and for other purposes described in our <a href="/privacy">privacy policy</a>.
-                        </p>
-
-                        <button 
-                            type="submit" 
-                            className="btn-place-order"
-                            onClick={handleSubmit}
-                            disabled={isSubmitting}
-                        >
-                            {isSubmitting ? 'Processing...' : 'Place order'}
-                        </button>
+                    <div className="summary-total">
+                        <strong>Total</strong>
+                        <strong>{totalPrice.toFixed(2)} TND</strong>
                     </div>
-                </div>
-            </div>
 
-            <div className="checkout-features">
-                <div className="feature">
-                    <span className="feature-icon">🏆</span>
-                    <div>
-                        <h4>High Quality</h4>
-                        <p>Crafted from top materials</p>
+                    <div className="payment-box">
+                        <strong>Payment method</strong>
+                        <p>💵 Cash on delivery</p>
                     </div>
-                </div>
-                <div className="feature">
-                    <span className="feature-icon">✅</span>
-                    <div>
-                        <h4>Warranty Protection</h4>
-                        <p>Over 2 years</p>
-                    </div>
-                </div>
-                <div className="feature">
-                    <span className="feature-icon">🚚</span>
-                    <div>
-                        <h4>Free Shipping</h4>
-                        <p>Order over 150 $</p>
-                    </div>
-                </div>
-                <div className="feature">
-                    <span className="feature-icon">💬</span>
-                    <div>
-                        <h4>24 / 7 Support</h4>
-                        <p>Dedicated support</p>
-                    </div>
+
+                    <button
+                        className="btn-place-order"
+                        onClick={handleSubmit}
+                        disabled={loading}
+                    >
+                        {loading ? "Processing..." : "Place order"}
+                    </button>
                 </div>
             </div>
         </div>

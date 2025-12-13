@@ -1,61 +1,90 @@
-import Commande from "../models/Commande.js";
+// controllers/commandeController.js
 import Panier from "../models/Panier.js";
+import Commande from "../models/Commande.js";
+import Listing from "../models/Listing.js";
+import Address from "../models/Address.js";
 
-// 🔹 Créer une commande depuis le panier
+
+// controllers/commandeController.js
 export const createCommandeFromPanier = async (req, res) => {
     try {
-        const { userId, billingDetails, paymentMethod, notes } = req.body;
+        const userId = req.user.id;
+        const { billingDetails, paymentMethod } = req.body;
 
-        console.log("📦 Création commande pour user:", userId);
-
-        // Récupère le panier actif
-        const panier = await Panier.findOne({ user: userId, status: "active" })
-            .populate("items.product");
-
-        if (!panier || panier.items.length === 0) {
-            return res.status(400).json({ message: "Le panier est vide" });
+        // 1️⃣ Validate address
+        if (
+            !billingDetails?.streetAddress ||
+            !billingDetails?.city ||
+            !billingDetails?.zipCode ||
+            !billingDetails?.country
+        ) {
+            return res.status(400).json({ message: "Invalid delivery address" });
         }
 
-        console.log("✅ Panier trouvé avec", panier.items.length, "articles");
+        // 2️⃣ Get panier
+        const panier = await Panier.findOne({
+            user: userId,
+            status: "active",
+        }).populate("items.product");
 
-        // Crée la commande
+        if (!panier || panier.items.length === 0) {
+            return res.status(400).json({ message: "Panier vide" });
+        }
+
+        // 3️⃣ Compute total safely
+        let totalPrice = 0;
+
+        for (const item of panier.items) {
+            if (item.product.status !== "available") {
+                return res.status(400).json({
+                    message: `Produit déjà vendu: ${item.product.title}`,
+                });
+            }
+
+            const productPrice = Number(item.product.price);
+
+            if (isNaN(productPrice)) {
+                return res.status(400).json({
+                    message: `Invalid price for ${item.product.title}`,
+                });
+            }
+
+            totalPrice += productPrice;
+        }
+
+        // 4️⃣ Create commande
         const commande = await Commande.create({
             buyer: userId,
-            items: panier.items.map(item => ({
-                listing: item.product._id,
-                quantity: item.quantity,
-                price: item.price,
+            items: panier.items.map((i) => ({
+                listing: i.product._id,
+                quantity: 1,
+                price: Number(i.product.price),
             })),
             billingDetails,
-            paymentMethod: paymentMethod || "cash",
-            totalPrice: panier.totalPrice,
-            notes: notes || "",
+            paymentMethod,
+            totalPrice,
             status: "pending",
         });
 
-        console.log("✅ Commande créée:", commande.orderNumber);
+        // 5️⃣ Lock products
+        for (const item of panier.items) {
+            await Listing.findByIdAndUpdate(item.product._id, {
+                status: "sold",
+            });
+        }
 
-        // ⭐ IMPORTANT : Marque le panier comme checked_out
+        // 6️⃣ Close panier
         panier.status = "checked_out";
         await panier.save();
 
-        console.log("✅ Panier marqué comme checked_out");
-
-        // Populate la commande pour la réponse
-        const populatedCommande = await Commande.findById(commande._id)
-            .populate("buyer", "username email")
-            .populate("items.listing");
-
-        res.status(201).json({
-            message: "Commande créée avec succès",
-            commande: populatedCommande,
-        });
+        res.status(201).json({ message: "Commande créée", commande });
 
     } catch (err) {
-        console.error("❌ Erreur création commande:", err);
+        console.error("CREATE COMMANDE ERROR:", err);
         res.status(500).json({ message: err.message });
     }
 };
+
 
 // 🔹 Récupérer toutes les commandes d'un utilisateur
 export const getCommandesByUser = async (req, res) => {
@@ -121,5 +150,46 @@ export const getAllCommandes = async (req, res) => {
         res.json(commandes);
     } catch (err) {
         res.status(500).json({ message: err.message });
+    }
+};
+// cancel command
+export const cancelCommande = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const commande = await Commande.findById(req.params.id)
+            .populate("items.listing")
+            .session(session);
+
+        if (!commande) {
+            throw new Error("Commande introuvable");
+        }
+
+        if (commande.status !== "pending") {
+            throw new Error("Commande déjà traitée");
+        }
+
+        // Re-open listings
+        for (const item of commande.items) {
+            await Listing.findByIdAndUpdate(
+                item.listing._id,
+                { status: "available" },
+                { session }
+            );
+        }
+
+        commande.status = "cancelled";
+        await commande.save({ session });
+
+        await session.commitTransaction();
+        session.endSession();
+
+        res.json({ message: "Commande annulée et produits réouverts" });
+
+    } catch (err) {
+        await session.abortTransaction();
+        session.endSession();
+        res.status(400).json({ message: err.message });
     }
 };

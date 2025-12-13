@@ -1,38 +1,97 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import "./ListingDetails.css";
 import { usePanier } from "../context/PanierContext";
 import Header from "../components/Header";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function ListingDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
 
+  // ---------------- STATE ----------------
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeImage, setActiveImage] = useState(0);
   const [activeTab, setActiveTab] = useState("description");
 
-  const { addProduct } = usePanier();
+  // ---------------- CONTEXT ----------------
+  const { panier, addProduct } = usePanier();
 
-  // Logged user
+  // ---------------- AUTH ----------------
   const auth = JSON.parse(localStorage.getItem("user"));
   const user = auth?.user || auth;
 
-  // -------------------------
-  // ADD TO CART
-  // -------------------------
+  // ---------------- MEMO ----------------
+  const alreadyInCart = useMemo(() => {
+    if (!panier || !listing) return false;
+    return panier.items?.some(
+      (item) => item.product?._id === listing._id
+    );
+  }, [panier, listing]);
+
+  // ---------------- INCREMENT VIEWS ----------------
+  useEffect(() => {
+    if (!id) return;
+
+    fetch(`http://localhost:5000/api/listings/${id}/views`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+      },
+    }).catch(() => { });
+  }, [id]);
+
+  // ---------------- FETCH LISTING ----------------
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchListing = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const res = await fetch(`http://localhost:5000/api/listings/${id}`);
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Annonce introuvable");
+        }
+
+        if (data.listing.status !== "available") {
+          setError("Ce produit n'est plus disponible");
+          return;
+        }
+
+        setListing(data.listing);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchListing();
+  }, [id]);
+
+  // ---------------- ACTIONS ----------------
   const handleAddToCart = async () => {
+    if (!listing) return;
+
+    if (alreadyInCart) {
+      toast.info("🛒 Ce produit est déjà dans votre panier");
+      return;
+    }
+
     const success = await addProduct(listing._id);
+
     success
-      ? alert("Produit ajouté au panier !")
-      : alert("Erreur lors de l'ajout au panier");
+      ? toast.success("✅ Produit ajouté au panier")
+      : toast.error("❌ Erreur lors de l'ajout au panier");
   };
 
-  // -------------------------
-  // CREATE CHAT WITH SELLER
-  // -------------------------
   const startChat = async () => {
     if (!user) {
       navigate("/login");
@@ -46,69 +105,19 @@ export default function ListingDetail() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({
-          user2: listing.seller, // seller ID from DB
-        }),
+        body: JSON.stringify({ user2: listing.seller }),
       });
 
       const data = await res.json();
 
-      if (res.ok) {
-        navigate("/chat");
-      } else {
-        alert(data.message || "Erreur lors de la création du chat");
-      }
-    } catch (err) {
-      alert("Erreur réseau, impossible de créer la conversation");
+      if (res.ok) navigate("/chat");
+      else toast.error(data.message || "Erreur création du chat");
+    } catch {
+      toast.error("Erreur réseau");
     }
   };
 
-  // -------------------------
-  // FETCH LISTING
-  // -------------------------
-  useEffect(() => {
-    if (!id || id === "undefined") {
-      setError("ID invalide");
-      setLoading(false);
-      navigate("/");
-      return;
-    }
-
-    const fetchListing = async () => {
-      try {
-        setLoading(true);
-
-        const response = await fetch(`http://localhost:5000/api/listings/${id}`);
-        const data = await response.json();
-
-        if (!response.ok || !data.success) throw new Error(data.error);
-
-        setListing(data.listing);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchListing();
-  }, [id, navigate]);
-
-  const formatPrice = (price) => `${price} TND`;
-
-  const handleShare = (platform) => {
-    const shareUrl = window.location.href;
-    const title = listing?.title;
-
-    const share = {
-      facebook: `https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`,
-      twitter: `https://twitter.com/intent/tweet?text=${title}&url=${shareUrl}`,
-      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`,
-    };
-
-    window.open(share[platform], "_blank", "width=600,height=400");
-  };
-
+  // ---------------- STATES ----------------
   if (loading) {
     return (
       <div className="loading-container">
@@ -123,23 +132,20 @@ export default function ListingDetail() {
       <div className="error-container">
         <h2>Erreur</h2>
         <p>{error || "Annonce introuvable"}</p>
-        <Link to="/" className="btn primary">Retour</Link>
+        <Link to="/shop" className="btn primary">Retour</Link>
       </div>
     );
   }
 
-  // -------------------------
-  // IMAGE HANDLING
-  // -------------------------
-  const allImages = Array.isArray(listing.images) ? listing.images : [];
-
-  const displayImage = allImages[activeImage] || allImages[0] || null;
+  // ---------------- IMAGES ----------------
+  const images = Array.isArray(listing.images) ? listing.images : [];
+  const mainImage = images[activeImage] || images[0];
 
   return (
     <div className="listing-detail">
       <Header />
+      <ToastContainer position="top-right" autoClose={2500} />
 
-      {/* BREADCRUMB */}
       <nav className="breadcrumb">
         <Link to="/">Accueil</Link> &gt;
         <Link to="/shop">Boutique</Link> &gt;
@@ -147,102 +153,77 @@ export default function ListingDetail() {
       </nav>
 
       <div className="listing-content">
-
-        {/* THUMBNAILS */}
-        {allImages.length > 1 && (
+        {images.length > 1 && (
           <div className="image-thumbnails">
-            {allImages.map((url, index) => (
+            {images.map((img, i) => (
               <button
-                key={index}
-                className={`thumbnail ${activeImage === index ? "active" : ""}`}
-                onClick={() => setActiveImage(index)}
+                key={i}
+                className={`thumbnail ${activeImage === i ? "active" : ""}`}
+                onClick={() => setActiveImage(i)}
               >
-                <img
-                  src={`http://localhost:5000${url}`}
-                  alt={`Image ${index + 1}`}
-                  onError={(e) =>
-                  (e.target.src =
-                    "https://via.placeholder.com/80x80?text=IMG")
-                  }
-                />
+                <img src={`http://localhost:5000${img}`} alt="" />
               </button>
             ))}
           </div>
         )}
 
-        {/* MAIN IMAGE */}
         <div className="main-image">
-          {displayImage ? (
-            <img
-              src={`http://localhost:5000${displayImage}`}
-              alt={listing.title}
-              onError={(e) =>
-              (e.target.src =
-                "https://via.placeholder.com/600x600?text=Aucune+image")
-              }
-            />
+          {mainImage ? (
+            <img src={`http://localhost:5000${mainImage}`} alt={listing.title} />
           ) : (
-            <div className="no-image">Aucune image disponible</div>
+            <div className="no-image">Aucune image</div>
           )}
         </div>
 
-        {/* PRODUCT INFO */}
         <div className="product-info">
-          <h1 className="product-title">{listing.title}</h1>
-          <p className="product-price">{formatPrice(listing.price)}</p>
+          <h1>{listing.title}</h1>
 
-          {/* ACTION BUTTONS */}
+          <p className="product-price">
+            {listing.price} <span>TND</span>
+          </p>
+
           <div className="product-actions">
-
-            {/* CHAT WITH SELLER */}
             <button className="btn contact-btn" onClick={startChat}>
-              Contacter le vendeur
+              💬 Contacter le vendeur
             </button>
 
-            <button className="btn compare-btn" onClick={handleAddToCart}>
-              Ajouter au panier
+            <button
+              className={`btn compare-btn ${alreadyInCart ? "disabled" : ""}`}
+              onClick={handleAddToCart}
+              disabled={alreadyInCart}
+            >
+              {alreadyInCart ? "Déjà dans le panier" : "🛒 Ajouter au panier"}
             </button>
 
             <Link to={`/compare/${listing._id}`} className="btn compare-btn">
-              Comparer le prix
+              🔍 Comparer le prix
             </Link>
           </div>
 
           {/* META INFO */}
           <div className="product-meta">
-            <div><strong>Catégorie:</strong> {listing.category?.name}</div>
-            <div><strong>État:</strong> {listing.condition}</div>
-            <div><strong>Publié:</strong> {new Date(listing.createdAt).toLocaleDateString("fr-FR")}</div>
+            <span className="meta-badge">👁 {listing.views} vues</span>
+            <span className="meta-badge">📦 {listing.condition}</span>
+            <span className="meta-badge">
+              🗂 {listing.category?.name}
+            </span>
+            <span className="meta-badge">
+              📅 {new Date(listing.createdAt).toLocaleDateString("fr-FR")}
+            </span>
           </div>
-
-          {/* SOCIAL SHARE */}
-          <div className="social-share">
-            <button className="social-icon" onClick={() => handleShare("facebook")}>Fb</button>
-            <button className="social-icon" onClick={() => handleShare("linkedin")}>In</button>
-            <button className="social-icon" onClick={() => handleShare("twitter")}>Tw</button>
-          </div>
-
-          {/* DESCRIPTION */}
-          {listing.description && (
-            <div className="product-description">
-              <h3>Description</h3>
-              <p>{listing.description}</p>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* TABS */}
       <div className="product-tabs">
         <div className="tabs-header">
           <button
-            className={`tab-button ${activeTab === "description" ? "active" : ""}`}
+            className={activeTab === "description" ? "active" : ""}
             onClick={() => setActiveTab("description")}
           >
             Description
           </button>
           <button
-            className={`tab-button ${activeTab === "info" ? "active" : ""}`}
+            className={activeTab === "info" ? "active" : ""}
             onClick={() => setActiveTab("info")}
           >
             Informations
@@ -250,20 +231,14 @@ export default function ListingDetail() {
         </div>
 
         <div className="tab-content">
-          {activeTab === "description" && (
-            <div className="tab-panel">
-              <h3>Description du produit</h3>
-              <p>{listing.description}</p>
-            </div>
-          )}
-
+          {activeTab === "description" && <p>{listing.description}</p>}
           {activeTab === "info" && (
-            <div className="tab-panel">
-              <h3>Informations supplémentaires</h3>
+            <>
               <p>Catégorie : {listing.category?.name}</p>
               <p>État : {listing.condition}</p>
-              <p>Prix : {formatPrice(listing.price)}</p>
-            </div>
+              <p>Prix : {listing.price} TND</p>
+              <p>Vues : {listing.views}</p>
+            </>
           )}
         </div>
       </div>

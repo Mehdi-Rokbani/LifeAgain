@@ -580,7 +580,7 @@ export const compareListing = async (req, res) => {
 export const getSellerListings = async (req, res) => {
   try {
     const sellerId = req.user.id; // secure: take from token
-    
+
     const listings = await Listing.find({ seller: sellerId })
       .sort({ createdAt: -1 });
 
@@ -593,23 +593,33 @@ export const updateListing = async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id);
 
-    if (!listing) return res.status(404).json({ success: false });
+    if (!listing)
+      return res.status(404).json({ success: false, error: "Listing not found" });
 
     if (listing.seller.toString() !== req.user.id)
       return res.status(403).json({ success: false, error: "Not allowed" });
 
+    // 🔒 BLOCK SOLD / ARCHIVED
+    if (listing.status !== "available") {
+      return res.status(400).json({
+        success: false,
+        error: "Sold listings cannot be edited",
+      });
+    }
+
     const fields = ["title", "description", "price", "condition", "category"];
-    fields.forEach(f => {
+    fields.forEach((f) => {
       if (req.body[f] !== undefined) listing[f] = req.body[f];
     });
 
     await listing.save();
 
     res.json({ success: true, listing });
-  } catch {
-    res.status(500).json({ success: false });
+  } catch (err) {
+    res.status(500).json({ success: false, error: "Server error" });
   }
 };
+
 
 export const deleteListing = async (req, res) => {
   try {
@@ -629,6 +639,48 @@ export const deleteListing = async (req, res) => {
   }
 };
 
+
+export const getImagesByListing = async (req, res) => {
+  try {
+    const images = await Image.find({ listing: req.params.id }).sort({ order: 1 });
+    res.json({ success: true, images });
+  } catch {
+    res.status(500).json({ success: false });
+  }
+};
+
+export const incrementListingViews = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false });
+    }
+
+    const listing = await Listing.findById(id);
+
+    if (!listing) {
+      return res.status(404).json({ success: false });
+    }
+
+    // OPTIONAL: prevent seller from incrementing their own views
+    if (req.user && listing.seller?.toString() === req.user.id) {
+      return res.json({ success: true, views: listing.views });
+    }
+
+    listing.views += 1;
+    await listing.save();
+
+    res.json({
+      success: true,
+      views: listing.views,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+};
+
+
 // Export par défaut pour les routes
 export default {
   createListing,
@@ -640,5 +692,7 @@ export default {
   deleteListingImage,
   getSellerListings,
   updateListing,
+  getImagesByListing,
+  incrementListingViews,
   deleteListing
 };

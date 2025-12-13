@@ -1,13 +1,13 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { usePanier } from '../../context/PanierContext';
-import './Cart.css';
-import Header from '../../components/Header/Header';
-import '../../components/Header/Header.css';
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { usePanier } from "../../context/PanierContext";
+import "./Cart.css";
+import Header from "../../components/Header/Header";
+import "../../components/Header/Header.css";
 
 const Cart = () => {
     const navigate = useNavigate();
-    const { panier, loading, removeProduct, updateQuantity, totalPrice, itemCount } = usePanier();
+    const { panier, loading, removeProduct, totalPrice, itemCount } = usePanier();
 
     if (loading && !panier) {
         return <div className="cart-loading">Chargement du panier...</div>;
@@ -18,7 +18,7 @@ const Cart = () => {
             <div className="cart-empty">
                 <h2>🛒 Votre panier est vide</h2>
                 <p>Ajoutez des articles pour commencer vos achats</p>
-                <button onClick={() => navigate('/shop')} className="btn-shop">
+                <button onClick={() => navigate("/shop")} className="btn-shop">
                     Continuer mes achats
                 </button>
             </div>
@@ -27,9 +27,9 @@ const Cart = () => {
 
     return (
         <div className="cart-page">
-
             <Header />
-            {/* Hero Section */}
+
+            {/* Hero */}
             <div className="cart-hero">
                 <h1>Cart</h1>
                 <p className="breadcrumb">
@@ -38,7 +38,7 @@ const Cart = () => {
             </div>
 
             <div className="cart-container">
-                {/* Cart Table */}
+                {/* CART TABLE */}
                 <div className="cart-main">
                     <table className="cart-table">
                         <thead>
@@ -50,73 +50,81 @@ const Cart = () => {
                                 <th></th>
                             </tr>
                         </thead>
+
                         <tbody>
-                            {panier.items.map((item) => (
-                                <tr key={item._id}>
-                                    <td>
-                                        <div className="cart-product">
-                                            <div className="cart-product-image">
-                                                {item.product?.images?.[0] ? (
-                                                    <img src={item.product.images[0]} alt={item.product.title} />
-                                                ) : (
-                                                    <div className="no-image">📦</div>
-                                                )}
+                            {panier.items.map((item) => {
+                                const product = item.product;
+                                const price = product?.price || 0;
+
+                                return (
+                                    <tr key={product._id}>
+                                        <td>
+                                            <div className="cart-product">
+                                                <div className="cart-product-image">
+                                                    {product?.images?.[0] ? (
+                                                        <img
+                                                            src={product.images[0]}
+                                                            alt={product.title}
+                                                        />
+                                                    ) : (
+                                                        <div className="no-image">📦</div>
+                                                    )}
+                                                </div>
+                                                <span className="cart-product-name">
+                                                    {product?.title}
+                                                </span>
                                             </div>
-                                            <span className="cart-product-name">
-                                                {item.product?.title || 'Produit'}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td className="cart-price">{item.price} TND</td>
-                                    <td>
-                                        <div className="quantity-control">
+                                        </td>
+
+                                        <td className="cart-price">
+                                            {price.toFixed(2)} TND
+                                        </td>
+
+                                        {/* FIXED QUANTITY */}
+                                        <td>
+                                            <span className="fixed-quantity">1</span>
+                                        </td>
+
+                                        {/* SUBTOTAL = PRICE */}
+                                        <td className="cart-subtotal">
+                                            {price.toFixed(2)} TND
+                                        </td>
+
+                                        <td>
                                             <button
-                                                onClick={() => updateQuantity(item.product._id, item.quantity - 1)}
-                                                disabled={loading || item.quantity <= 1}
-                                            >
-                                                -
-                                            </button>
-                                            <span>{item.quantity}</span>
-                                            <button
-                                                onClick={() => updateQuantity(item.product._id, item.quantity + 1)}
+                                                className="btn-remove"
+                                                onClick={() => removeProduct(product._id)}
                                                 disabled={loading}
                                             >
-                                                +
+                                                🗑️
                                             </button>
-                                        </div>
-                                    </td>
-                                    <td className="cart-subtotal">
-                                        {(item.price * item.quantity).toFixed(2)} TND
-                                    </td>
-                                    <td>
-                                        <button
-                                            className="btn-remove"
-                                            onClick={() => removeProduct(item.product._id)}
-                                            disabled={loading}
-                                        >
-                                            🗑️
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>
 
-                {/* Cart Totals */}
+                {/* TOTALS */}
                 <div className="cart-totals">
                     <h3>Cart Totals</h3>
+
                     <div className="totals-row">
                         <span>Subtotal</span>
                         <span>{totalPrice.toFixed(2)} TND</span>
                     </div>
+
                     <div className="totals-row total">
                         <span>Total</span>
-                        <span className="total-price">{totalPrice.toFixed(2)} TND</span>
+                        <span className="total-price">
+                            {totalPrice.toFixed(2)} TND
+                        </span>
                     </div>
+
                     <button
                         className="btn-checkout"
-                        onClick={() => navigate('/checkout')}
+                        onClick={() => navigate("/checkout")}
                     >
                         Check Out
                     </button>

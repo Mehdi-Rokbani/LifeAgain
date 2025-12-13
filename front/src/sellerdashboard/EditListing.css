@@ -1,0 +1,86 @@
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+
+.card label {
+    display: block;
+    font-weight: 600;
+    margin-top: 12px;
+}
+
+.card input,
+.card textarea {
+    width: 100%;
+    padding: 10px;
+    margin-top: 6px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+.cover-image {
+    width: 220px;
+    border-radius: 10px;
+    margin: 12px 0;
+}
+
+.image-grid {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.image-card {
+    width: 140px;
+    text-align: center;
+}
+
+.image-card img {
+    width: 100%;
+    border-radius: 8px;
+    margin-bottom: 6px;
+}
+
+/* BUTTONS */
+.btn {
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    display: inline-block;
+    margin-top: 12px;
+}
+
+.btn.primary {
+    background: #ff7a00;
+    color: white;
+}
+
+.btn.secondary {
+    background: #eee;
+}
+
+.btn.danger {
+    background: #ff4d4f;
+    color: white;
+}
+
+.btn.small {
+    padding: 6px 10px;
+    font-size: 13px;
+}
+
+.btn.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.locked-info {
+    color: #888;
+    font-size: 14px;
+}
