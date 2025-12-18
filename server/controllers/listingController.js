@@ -33,12 +33,13 @@ export const createListing = async (req, res) => {
       });
     }
 
-    if (isNaN(price) || Number(price) <= 0) {
+    if (isNaN(price) || Number(price) < 0.5) {
       return res.status(400).json({
         success: false,
-        error: "Prix invalide"
+        error: "Prix invalide (min 0.5 TND)"
       });
     }
+
 
     if (!mongoose.Types.ObjectId.isValid(category)) {
       return res.status(400).json({
@@ -589,6 +590,10 @@ export const getSellerListings = async (req, res) => {
     res.status(500).json({ success: false, error: "Erreur serveur" });
   }
 };
+
+
+
+//-------------------------------------- update listing wiwiwiwiwiw -------------------------------------------------------//
 export const updateListing = async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id);
@@ -611,6 +616,14 @@ export const updateListing = async (req, res) => {
     fields.forEach((f) => {
       if (req.body[f] !== undefined) listing[f] = req.body[f];
     });
+
+    if (req.body.price !== undefined) {
+      const p = Number(req.body.price);
+      if (Number.isNaN(p) || p < 0.5) {
+        return res.status(400).json({ success: false, error: "Prix invalide (min 0.5 TND)" });
+      }
+    }
+
 
     await listing.save();
 

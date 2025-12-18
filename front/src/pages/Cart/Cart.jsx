@@ -2,8 +2,8 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { usePanier } from "../../context/PanierContext";
 import "./Cart.css";
-import Header from "../../components/Header/Header";
-import "../../components/Header/Header.css";
+import Header from "../../components/Header";
+
 
 const Cart = () => {
     const navigate = useNavigate();
@@ -63,9 +63,10 @@ const Cart = () => {
                                                 <div className="cart-product-image">
                                                     {product?.images?.[0] ? (
                                                         <img
-                                                            src={product.images[0]}
+                                                            src={`http://localhost:5000${product.images[0]}`}
                                                             alt={product.title}
                                                         />
+ 
                                                     ) : (
                                                         <div className="no-image">📦</div>
                                                     )}

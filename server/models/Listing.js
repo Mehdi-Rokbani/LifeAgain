@@ -20,7 +20,7 @@ const listingSchema = new mongoose.Schema(
         price: {
             type: Number,
             required: [true, "Price is required"],
-            min: [0, "Price cannot be negative"],
+            min: [0.5, "Price must be at least 0.5 TND"],
         },
 
         condition: {

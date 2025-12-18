@@ -8,383 +8,257 @@ import { AuthContext } from "../context/AuthContext";
 
 export default function CreateAd() {
   const navigate = useNavigate();
-
   const { user } = useContext(AuthContext);
   const { categories } = useCategories();
   const { getAddresses } = useAddress();
 
+  // ---------------- STATES ----------------
   const [addresses, setAddresses] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState("");
 
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [priceError, setPriceError] = useState("");
   const [phone, setPhone] = useState(user?.phone || "");
   const [condition, setCondition] = useState("used");
 
-  const [photos, setPhotos] = useState([]);
+  const [parentCategoryId, setParentCategoryId] = useState("");
+  const [subCategoryId, setSubCategoryId] = useState("");
+
   const [cover, setCover] = useState(null);
-  const [photoPreviews, setPhotoPreviews] = useState([]);
   const [coverPreview, setCoverPreview] = useState(null);
+  const [photos, setPhotos] = useState([]);
+  const [photoPreviews, setPhotoPreviews] = useState([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [priceError, setPriceError] = useState("");
 
-  // LOAD ADDRESSES
+  // ---------------- DATA ----------------
   useEffect(() => {
-    const fetchAddresses = async () => {
+    (async () => {
       const res = await getAddresses();
-      setAddresses(Array.isArray(res) ? res : (res.addresses || []));
-      console.log("User Addresses:", res);
-    };
-
-    fetchAddresses();
+      setAddresses(Array.isArray(res) ? res : res.addresses || []);
+    })();
   }, []);
 
-  // PARENT CATEGORIES
-  const parentCategories = categories.filter(cat => !cat.parentCategory);
+  const getParentId = (c) =>
+    typeof c.parentCategory === "object" ? c.parentCategory?._id : c.parentCategory;
 
-  // COVER UPLOAD
+  const parentCategories = categories.filter((c) => !getParentId(c));
+  const subCategories = categories.filter(
+    (c) => getParentId(c) === parentCategoryId
+  );
+
+  // ---------------- PRICE ----------------
+  const handlePriceChange = (e) => {
+    const v = e.target.value;
+    setPrice(v);
+    setPriceError(!v || Number(v) < 0.5 ? "Minimum 0.5 TND" : "");
+  };
+
+  // ---------------- COVER ----------------
   const handleCover = (e) => {
     const file = e.target.files[0];
-    setCover(file);
-
+    if (!file) return;
     if (coverPreview) URL.revokeObjectURL(coverPreview);
-    if (file) setCoverPreview(URL.createObjectURL(file));
-
+    setCover(file);
+    setCoverPreview(URL.createObjectURL(file));
     e.target.value = "";
-  };
-
-  // MULTIPLE PHOTOS
-  const handlePhotos = (e) => {
-    const newFiles = Array.from(e.target.files);
-
-    if (photos.length + newFiles.length > 8) {
-      alert("Max 8 photos.");
-      return;
-    }
-
-    setPhotos(prev => [...prev, ...newFiles]);
-    setPhotoPreviews(prev => [...prev, ...newFiles.map(f => URL.createObjectURL(f))]);
-
-    e.target.value = "";
-  };
-
-  const removePhoto = (index) => {
-    URL.revokeObjectURL(photoPreviews[index]);
-
-    setPhotos(prev => prev.filter((_, i) => i !== index));
-    setPhotoPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const removeCover = () => {
-    if (coverPreview) URL.revokeObjectURL(coverPreview);
+    URL.revokeObjectURL(coverPreview);
     setCover(null);
     setCoverPreview(null);
   };
 
-  // PRICE VALIDATION
-  const handlePriceChange = (e) => {
-    const value = e.target.value;
-    setPrice(value);
+  // ---------------- PHOTOS ----------------
+  const handlePhotos = (e) => {
+    const files = Array.from(e.target.files);
+    if (photos.length + files.length > 8) return alert("Max 8 photos");
 
-    if (!value || parseFloat(value) <= 0) {
-      setPriceError("Le prix doit être supérieur à 0");
-    } else {
-      setPriceError("");
-    }
+    setPhotos((p) => [...p, ...files]);
+    setPhotoPreviews((p) => [...p, ...files.map(f => URL.createObjectURL(f))]);
+    e.target.value = "";
   };
 
-  // SUBMIT LISTING
+  const removePhoto = (i) => {
+    URL.revokeObjectURL(photoPreviews[i]);
+    setPhotos((p) => p.filter((_, idx) => idx !== i));
+    setPhotoPreviews((p) => p.filter((_, idx) => idx !== i));
+  };
+
+  // ---------------- SUBMIT ----------------
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!cover) {
-      alert("Veuillez ajouter une photo de couverture");
-      return;
-    }
-
-    if (!selectedAddress) {
-      alert("Veuillez sélectionner une adresse");
-      return;
-    }
-
-    if (!user.phone && !phone) {
-      alert("Veuillez entrer un numéro de téléphone");
-      return;
-    }
+    if (priceError) return alert(priceError);
+    if (!cover) return alert("Photo de couverture requise");
+    if (!subCategoryId) return alert("Sous-catégorie requise");
+    if (!selectedAddress) return alert("Adresse requise");
 
     setIsSubmitting(true);
 
     const fd = new FormData();
-
     fd.append("title", title);
     fd.append("description", description);
     fd.append("price", price);
-    fd.append("category", category);
+    fd.append("category", subCategoryId);
     fd.append("condition", condition);
     fd.append("address", selectedAddress);
     fd.append("phone", user.phone || phone);
-    fd.append("seller", user.id);
-
-    if (cover) fd.append("cover", cover);
-    photos.forEach((p) => fd.append("photos", p));
-
-    console.log("🔥 COVER FILE SENT:", cover);
-    console.log("🔥 PHOTOS SENT:", photos);
+    fd.append("cover", cover);
+    photos.forEach(p => fd.append("photos", p));
 
     try {
       const res = await fetch("http://localhost:5000/api/listings", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         body: fd,
       });
-
       const data = await res.json();
-
-      if (res.ok && data?.listing?._id) {
-        navigate(`/listings/${data.listing._id}`);
-      } else {
-        alert("Erreur: " + (data.error || "Création échouée"));
-      }
-    } catch (err) {
-      console.log("Creation Error:", err);
-      alert("Erreur lors de la création de l'annonce");
+      if (res.ok) navigate(`/listings/${data.listing._id}`);
+      else alert(data.error || "Erreur");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // UI
+  // ---------------- UI ----------------
   return (
     <div className="create-page">
       <Header />
 
-      <div className="hero-banner">
-        <div className="hero-text">
-          <h1>Créer une annonce</h1>
-          <p>Home › Créer une annonce</p>
-        </div>
-      </div>
+      <div className="create-container">
+        <h1>Créer une annonce</h1>
 
-      <div className="form-wrapper">
-        <div className="form-container">
-          <form
-            className="create-grid"
-            onSubmit={handleSubmit}
-            encType="multipart/form-data"
-          >
-            {/* Section 1: Informations de base */}
-            <div className="form-section">
-              <h2 className="section-title">📝 Informations de base</h2>
+        <form className="card" onSubmit={handleSubmit}>
 
-              <div className="field-row">
-                <div className="field">
-                  <label>Titre de l'annonce *</label>
-                  <input
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Ex: iPhone 13 Pro Max en excellent état"
-                    required
-                  />
-                </div>
+          {/* BASIC INFO */}
+          <div className="section">
+            <h2>Informations</h2>
 
-                <div className="field">
-                  <label>Catégorie *</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    required
-                  >
-                    <option value="">Choisir une catégorie</option>
-                    {parentCategories.map((cat) => (
-                      <option key={cat._id} value={cat._id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            <input placeholder="Titre" value={title} onChange={e => setTitle(e.target.value)} required />
+
+            <div className="row">
+              <div className="field">
+                <select
+                  value={parentCategoryId}
+                  onChange={(e) => {
+                    setParentCategoryId(e.target.value);
+                    setSubCategoryId("");
+                  }}
+                  required
+                >
+                  <option value="">Catégorie</option>
+                  {parentCategories.map(c => (
+                    <option key={c._id} value={c._id}>{c.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="field">
-                <label>Description détaillée *</label>
-                <textarea
-                  value={description}
-                  rows="5"
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Décrivez votre article en détail: état, caractéristiques, raison de la vente..."
+                <select
+                  value={subCategoryId}
+                  onChange={(e) => setSubCategoryId(e.target.value)}
+                  disabled={!parentCategoryId}
+                  required
+                >
+                  <option value="">Sous-catégorie</option>
+                  {subCategories.map(s => (
+                    <option key={s._id} value={s._id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+
+            <textarea placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} required />
+
+            <div className="row">
+              <div className="field">
+                <input
+                  type="number"
+                  min="0.5"
+                  step="0.01"
+                  placeholder="Prix (TND)"
+                  value={price}
+                  onChange={handlePriceChange}
                   required
                 />
-                <small className="field-hint">
-                  {description.length}/500 caractères
-                </small>
-              </div>
-
-              <div className="field-row">
-                <div className="field">
-                  <label>Prix (TND) *</label>
-                  <input
-                    type="number"
-                    value={price}
-                    onChange={handlePriceChange}
-                    min="0.01"
-                    step="0.01"
-                    placeholder="0.00"
-                    required
-                  />
-                  {priceError && <p className="error">{priceError}</p>}
-                </div>
-
-                <div className="field">
-                  <label>État du produit *</label>
-                  <select
-                    value={condition}
-                    onChange={(e) => setCondition(e.target.value)}
-                  >
-                    <option value="new">Neuf</option>
-                    <option value="used">Occasion</option>
-                    <option value="refurbished">Reconditionné</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Section 2: Photos */}
-            <div className="form-section">
-              <h2 className="section-title">📷 Photos du produit</h2>
-
-              <div className="field">
-                <label>Photo de couverture * (Photo principale)</label>
-                <div className="upload-area">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    name="cover"
-                    onChange={handleCover}
-                    id="cover-input"
-                    className="file-input"
-                  />
-                  <label htmlFor="cover-input" className="upload-label">
-                    <div className="upload-icon">📸</div>
-                    <p>Cliquez pour ajouter une photo de couverture</p>
-                    <small>PNG, JPG jusqu'à 5MB</small>
-                  </label>
-                </div>
-
-                {coverPreview && (
-                  <div className="image-preview cover-preview">
-                    <img src={coverPreview} alt="Cover" />
-                    <button type="button" onClick={removeCover} className="remove-btn">
-                      ✕ Supprimer
-                    </button>
-                  </div>
-                )}
+                {priceError && <span className="error">{priceError}</span>}
               </div>
 
               <div className="field">
-                <label>Photos supplémentaires (max 8)</label>
-                <div className="upload-area">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    name="photos"
-                    onChange={handlePhotos}
-                    id="photos-input"
-                    className="file-input"
-                  />
-                  <label htmlFor="photos-input" className="upload-label">
-                    <div className="upload-icon">🖼️</div>
-                    <p>Ajoutez jusqu'à 8 photos supplémentaires</p>
-                    <small>{photos.length}/8 photos ajoutées</small>
-                  </label>
-                </div>
-
-                {photoPreviews.length > 0 && (
-                  <div className="photos-preview-grid">
-                    {photoPreviews.map((p, i) => (
-                      <div className="image-preview" key={i}>
-                        <img src={p} alt={`Photo ${i + 1}`} />
-                        <button type="button" onClick={() => removePhoto(i)} className="remove-btn">
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <select
+                  value={condition}
+                  onChange={(e) => setCondition(e.target.value)}
+                  required
+                >
+                  <option value="new">Neuf</option>
+                  <option value="used">Occasion</option>
+                  <option value="refurbished">Reconditionné</option>
+                </select>
               </div>
             </div>
 
-            {/* Section 3: Contact et localisation */}
-            <div className="form-section">
-              <h2 className="section-title">📍 Contact et localisation</h2>
 
-              {!user.phone && (
-                <div className="field">
-                  <label>Téléphone *</label>
-                  <input
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+216 12 345 678"
-                    required
-                  />
-                </div>
-              )}
+          </div>
 
-              <div className="field">
-                <label>Adresse de retrait *</label>
+          {/* IMAGES */}
+          <div className="section">
+            <h2>Photos</h2>
 
-                {addresses.length === 0 ? (
-                  <div className="no-address-warning">
-                    <div className="warning-icon">⚠️</div>
-                    <div>
-                      <p>Vous devez d'abord ajouter une adresse dans votre profil.</p>
-                      <button
-                        type="button"
-                        className="auth-btn"
-                        onClick={() => navigate("/profile")}
-                      >
-                        Ajouter une adresse
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <select
-                    value={selectedAddress}
-                    onChange={(e) => setSelectedAddress(e.target.value)}
-                    required
-                  >
-                    <option value="">Choisir une adresse</option>
+            <label className="upload-box">
+              Ajouter photo de couverture
+              <input type="file" accept="image/*" hidden onChange={handleCover} />
+            </label>
 
-                    {addresses.map((addr) => (
-                      <option key={addr._id} value={addr._id}>
-                        {addr.street}, {addr.city} {addr.postalCode}
-                      </option>
-                    ))}
-                  </select>
-                )}
+            {coverPreview && (
+              <div className="image-card">
+                <img src={coverPreview} />
+                <button type="button" onClick={removeCover}>✕</button>
               </div>
+            )}
+
+            <label className="upload-box">
+              Ajouter photos (max 8)
+              <input type="file" accept="image/*" multiple hidden onChange={handlePhotos} />
+            </label>
+
+            <div className="image-grid">
+              {photoPreviews.map((p, i) => (
+                <div className="image-card" key={i}>
+                  <img src={p} />
+                  <button type="button" onClick={() => removePhoto(i)}>✕</button>
+                </div>
+              ))}
             </div>
+          </div>
 
-            {/* Submit Button */}
-            <button className="submit-btn" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <span className="spinner"></span>
-                  Publication en cours...
-                </>
-              ) : (
-                <>
-                  ✓ Publier l'annonce
-                </>
-              )}
-            </button>
+          {/* CONTACT */}
+          <div className="section">
+            <h2>Contact</h2>
 
-          </form>
-        </div>
+            {!user.phone && (
+              <input placeholder="Téléphone" value={phone} onChange={e => setPhone(e.target.value)} />
+            )}
+
+            <select value={selectedAddress} onChange={e => setSelectedAddress(e.target.value)} required>
+              <option value="">Adresse</option>
+              {addresses.map(a => (
+                <option key={a._id} value={a._id}>
+                  {a.street}, {a.city}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button className="submit-btn" disabled={isSubmitting}>
+            {isSubmitting ? "Publication..." : "Publier"}
+          </button>
+
+        </form>
       </div>
     </div>
   );

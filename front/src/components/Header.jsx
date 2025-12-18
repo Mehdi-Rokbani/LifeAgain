@@ -32,10 +32,14 @@ export default function Header() {
                 {user && user.role === 'seller' && (
                     <Link to="/dashboard">Dashboard</Link>
                 )}
-                {user && (
-                    <Link to="/shop">Shop</Link>
+                {user && user.role === 'admin' && (
+                    <Link to="/admin">Dashboard</Link>
                 )}
-                <Link to="/chat">Chat</Link>
+                <Link to="/shop">Shop</Link>
+                {user && (
+                    <Link to="/chat">Chat</Link>
+                )}
+
 
             </nav>
 
