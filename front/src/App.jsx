@@ -34,6 +34,7 @@ import AdminListings from "./admin/AdminListings";
 import AdminCreateListing from "./admin/AdminCreateListing";
 import AdminCommandes from "./admin/AdminCommandes";
 import AdminEditListing from "./admin/AdminEditListing";
+import AdminCommandeDetails from "./admin/AdminCommandeDetails";
 
 
 /* ===================== AUTH ===================== */
@@ -183,6 +184,16 @@ export default function App() {
             </ProtectedRoute>
           }
         >
+
+
+          <Route
+            path="/admin/commandes/:id"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminCommandeDetails />
+              </ProtectedRoute>
+            }
+          ></Route>
 
           <Route
             path="/admin/listings/:id/edit"

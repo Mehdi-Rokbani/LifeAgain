@@ -20,7 +20,8 @@ import {
    adminCreateListing,
    adminGetAllCommandes,
    adminUpdateCommandeStatus,
-   adminGetListingById
+   adminGetListingById,
+   adminGetCommandeById
 } from "../controllers/adminController.js";
 
 import { protect, isAdmin } from "../middleware/auth.js";
@@ -67,6 +68,8 @@ router.post("/sellers/:id/addresses", adminAddSellerAddress);
 router.get("/listings/:id", adminGetListingById);
 
 
+// GET one commande
+router.get("/commandes/:id", adminGetCommandeById);
 
 /* ===========================================================
    COMMANDES — ADMIN

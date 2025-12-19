@@ -180,6 +180,15 @@ export const adminUpdateListing = async (req, res) => {
             status,
         } = req.body;
 
+
+        if (listing.status === "sold") {
+            return res.status(400).json({
+                success: false,
+                message: "Sold listings cannot be edited",
+            });
+        }
+
+
         // ================= TITLE (UNIQUE PER SELLER) =================
         if (title && title !== listing.title) {
             const titleNormalized = normalizeTitle(title);
@@ -273,16 +282,23 @@ export const adminDeleteListingCascade = async (req, res) => {
 /**
  * GET ALL COMMANDES (admin)
  */
+
 export const adminGetAllCommandes = async (req, res) => {
     try {
         const commandes = await Commande.find()
-            .populate("buyer", "username email")
-            .populate("items.listing")
+            .populate("buyer", "email username")
             .sort({ createdAt: -1 });
 
-        res.json({ success: true, commandes });
+        res.json({
+            success: true,
+            commandes,
+        });
     } catch (err) {
-        res.status(500).json({ success: false });
+        console.error("ADMIN GET COMMANDE ERROR:", err);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
     }
 };
 
@@ -471,6 +487,38 @@ export const adminGetListingById = async (req, res) => {
         });
     } catch (err) {
         console.error("ADMIN GET LISTING ERROR:", err);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
+    }
+};
+export const adminGetCommandeById = async (req, res) => {
+    try {
+        const commande = await Commande.findById(req.params.id)
+            .populate("buyer", "email username")
+            .populate({
+                path: "items.listing",
+                select: "title price images seller",
+                populate: {
+                    path: "seller",
+                    select: "username email",
+                },
+            });
+
+        if (!commande) {
+            return res.status(404).json({
+                success: false,
+                message: "Commande not found",
+            });
+        }
+
+        res.json({
+            success: true,
+            commande,
+        });
+    } catch (err) {
+        console.error("ADMIN GET COMMANDE ERROR:", err);
         res.status(500).json({
             success: false,
             message: "Server error",
