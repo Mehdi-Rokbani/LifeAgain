@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePanier } from "../../context/PanierContext";
+import { toast } from "react-toastify";
 import "./Cart.css";
 import Header from "../../components/Header";
 
@@ -12,10 +13,32 @@ const Cart = () => {
         navigate(`/listings/${id}`);
     };
 
+    // --------------------------------------------------
+    // WARN IF CART AUTO-CLEANED
+    // --------------------------------------------------
+    useEffect(() => {
+        if (panier && panier.items?.length === 0) {
+            toast.info("Some items were removed because they are no longer available");
+        }
+    }, [panier]);
+
+    // --------------------------------------------------
+    // CHECK IF CHECKOUT IS ALLOWED
+    // --------------------------------------------------
+    const canCheckout = useMemo(() => {
+        return panier && panier.items && panier.items.length > 0;
+    }, [panier]);
+
+    // --------------------------------------------------
+    // LOADING STATE
+    // --------------------------------------------------
     if (loading && !panier) {
         return <div className="cart-loading">Chargement du panier...</div>;
     }
 
+    // --------------------------------------------------
+    // EMPTY CART
+    // --------------------------------------------------
     if (!panier || itemCount === 0) {
         return (
             <div className="cart-empty">
@@ -28,6 +51,9 @@ const Cart = () => {
         );
     }
 
+    // --------------------------------------------------
+    // UI
+    // --------------------------------------------------
     return (
         <div className="cart-page">
             <Header />
@@ -59,7 +85,7 @@ const Cart = () => {
                                 const product = item.product;
                                 if (!product) return null;
 
-                                const price = product.price || 0;
+                                const price = item.price ?? product.price ?? 0;
                                 const sellerName =
                                     product.seller?.username ||
                                     product.seller?.name ||
@@ -105,7 +131,7 @@ const Cart = () => {
                                             {price.toFixed(2)} TND
                                         </td>
 
-                                        {/* QUANTITY (FIXED) */}
+                                        {/* QUANTITY (FIXED FOR NOW) */}
                                         <td>
                                             <span className="fixed-quantity">1</span>
                                         </td>
@@ -152,6 +178,12 @@ const Cart = () => {
                     <button
                         className="btn-checkout"
                         onClick={() => navigate("/checkout")}
+                        disabled={!canCheckout}
+                        title={
+                            canCheckout
+                                ? "Proceed to checkout"
+                                : "Your cart is empty or invalid"
+                        }
                     >
                         Check Out
                     </button>

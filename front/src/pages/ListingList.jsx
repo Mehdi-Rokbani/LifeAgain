@@ -1,59 +1,53 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import "./ListingsList.css";
 import Header from "../components/Header";
 
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 import { useFavorites } from "../context/FavoriteContext";
-import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-
+import Footer from "../components/Footer";
 
 export default function ListingsList() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [viewMode, setViewMode] = useState("grid"); // grid or list
+  const [viewMode, setViewMode] = useState("grid");
+
   const { toggleFavorite, isFavorited } = useFavorites();
   const { user } = useContext(AuthContext);
 
   const itemsPerPage = 8;
 
+  // --------------------------------------------------
+  // FETCH LISTINGS (ONLY AVAILABLE)
+  // --------------------------------------------------
   useEffect(() => {
     const fetchListings = async () => {
       try {
-        console.log("🔄 Récupération des annonces...");
-        const response = await fetch("http://localhost:5000/api/listings");
+        const res = await fetch("http://localhost:5000/api/listings");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-        if (!response.ok) {
-          throw new Error(`Erreur HTTP: ${response.status}`);
-        }
+        const data = await res.json();
 
-        const data = await response.json();
-        console.log("📦 Données reçues:", data);
-
-        // CORRECTION : Gérer les différents formats de réponse
-        let listingsArray = [];
+        let rawListings = [];
 
         if (data.success && Array.isArray(data.listings)) {
-          // Format: { success: true, listings: [...] }
-          listingsArray = data.listings;
+          rawListings = data.listings;
         } else if (Array.isArray(data)) {
-          // Format: [...] (tableau direct)
-          listingsArray = data;
-        } else if (data.listings && Array.isArray(data.listings)) {
-          // Autre format possible
-          listingsArray = data.listings;
-        } else {
-          console.warn("⚠️ Format de données inattendu:", data);
-          listingsArray = [];
+          rawListings = data;
+        } else if (Array.isArray(data.listings)) {
+          rawListings = data.listings;
         }
 
-        setListings(listingsArray);
+        // ✅ FILTER HERE (IMPORTANT)
+        const onlyAvailable = rawListings.filter(
+          (l) => l.status === "available"
+        );
 
+        setListings(onlyAvailable);
       } catch (err) {
-        console.error("❌ Erreur fetchListings:", err);
         setError(err.message);
         setListings([]);
       } finally {
@@ -64,21 +58,26 @@ export default function ListingsList() {
     fetchListings();
   }, []);
 
-  // CORRECTION : S'assurer que listings est un tableau avant d'utiliser slice
-  const safeListings = Array.isArray(listings) ? listings : [];
-
-  // Pagination
+  // --------------------------------------------------
+  // PAGINATION
+  // --------------------------------------------------
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentListings = safeListings.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(safeListings.length / itemsPerPage);
+  const currentListings = listings.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+  const totalPages = Math.ceil(listings.length / itemsPerPage);
 
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const paginate = (page) => setCurrentPage(page);
 
+  // --------------------------------------------------
+  // STATES
+  // --------------------------------------------------
   if (loading) {
     return (
       <div className="loading-container">
-        <div className="spinner"></div>
+        <div className="spinner" />
         <p>Chargement des annonces...</p>
       </div>
     );
@@ -87,12 +86,9 @@ export default function ListingsList() {
   if (error) {
     return (
       <div className="error-container">
-        <h2>Erreur de chargement</h2>
+        <h2>Erreur</h2>
         <p>{error}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="retry-btn"
-        >
+        <button onClick={() => window.location.reload()}>
           Réessayer
         </button>
       </div>
@@ -102,7 +98,8 @@ export default function ListingsList() {
   return (
     <div className="shop-page">
       <Header />
-      {/* Hero Banner */}
+
+      {/* HERO */}
       <div className="shop-hero">
         <div className="shop-hero-content">
           <h1>Boutique</h1>
@@ -110,100 +107,80 @@ export default function ListingsList() {
         </div>
       </div>
 
-      {/* Filters & Controls */}
+      {/* CONTROLS */}
       <div className="shop-controls">
         <div className="controls-left">
-          <button className="filter-btn">
-            <span className="icon">☰</span> Filtres
+          <button className="filter-btn">☰ Filtres</button>
+
+          <button
+            className={`view-btn ${viewMode === "grid" ? "active" : ""}`}
+            onClick={() => setViewMode("grid")}
+          >
+            ⊞
           </button>
 
           <button
-            className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
-            onClick={() => setViewMode('grid')}
+            className={`view-btn ${viewMode === "list" ? "active" : ""}`}
+            onClick={() => setViewMode("list")}
           >
-            <span className="icon">⊞</span>
-          </button>
-
-          <button
-            className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
-            onClick={() => setViewMode('list')}
-          >
-            <span className="icon">☰</span>
+            ☰
           </button>
 
           <span className="results-count">
-            Affichage {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, safeListings.length)} sur {safeListings.length} résultats
+            Affichage {indexOfFirstItem + 1}–
+            {Math.min(indexOfLastItem, listings.length)} sur{" "}
+            {listings.length}
           </span>
-        </div>
-
-        <div className="controls-right">
-          <label>Afficher</label>
-          <select className="show-select">
-            <option value="8">8</option>
-            <option value="16">16</option>
-            <option value="32">32</option>
-          </select>
-
-          <label>Trier par</label>
-          <select className="sort-select">
-            <option value="latest">Plus récent</option>
-            <option value="price-low">Prix: Croissant</option>
-            <option value="price-high">Prix: Décroissant</option>
-            <option value="popular">Plus populaire</option>
-          </select>
         </div>
       </div>
 
-      {/* Products Grid */}
-      {safeListings.length === 0 ? (
+      {/* PRODUCTS */}
+      {listings.length === 0 ? (
         <div className="no-listings">
-          <div className="no-listings-content">
-            <h3>Aucune annonce disponible</h3>
-            <p>Soyez le premier à créer une annonce !</p>
-            <Link to="/create-listing" className="create-listing-btn">
-              Créer une annonce
-            </Link>
-          </div>
+          <h3>Aucune annonce disponible</h3>
         </div>
       ) : (
         <>
           <div className={`products-container ${viewMode}`}>
             {currentListings.map((listing) => {
-
-              // CORRECTION : images are now STRINGS
-              const coverImage = Array.isArray(listing.images) ? listing.images[0] : null;
+              const coverImage = listing.images?.[0];
 
               return (
                 <div key={listing._id} className="product-card">
-                  <div className="favorite-btn-wrapper">
-                    {user && user.role === "client" && (
-                      <button
-                        className="favorite-btn"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          toggleFavorite(listing._id);
-                        }}
-                      >
-                        {isFavorited(listing._id) ? (
-                          <FaHeart className="heart active" />
-                        ) : (
-                          <FaRegHeart className="heart" />
-                        )}
-                      </button>
-                    )}
-                  </div>
+                  {/* FAVORITE */}
+                  {user?.role === "client" && (
+                    <button
+                      className="favorite-btn"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toggleFavorite(listing._id);
+                      }}
+                    >
+                      {isFavorited(listing._id) ? (
+                        <FaHeart className="heart active" />
+                      ) : (
+                        <FaRegHeart className="heart" />
+                      )}
+                    </button>
+                  )}
 
-                  <Link to={`/listings/${listing._id}`} className="product-link">
+                  <Link
+                    to={`/listings/${listing._id}`}
+                    className="product-link"
+                  >
                     <div className="product-image">
                       {coverImage ? (
-                        <img src={`http://localhost:5000${coverImage}`} alt={listing.title} />
+                        <img
+                          src={`http://localhost:5000${coverImage}`}
+                          alt={listing.title}
+                        />
                       ) : (
-                        <div className="no-image">📷</div>
+                        <div className="no-image">📦</div>
                       )}
                     </div>
 
                     <div className="product-info">
-                      <h3 className="product-title">{listing.title}</h3>
+                      <h3>{listing.title}</h3>
 
                       {listing.seller?.username && (
                         <p className="product-seller">
@@ -211,51 +188,34 @@ export default function ListingsList() {
                         </p>
                       )}
 
-                      <p className="product-price">{listing.price} TND</p>
+                      <p className="product-price">
+                        {listing.price} TND
+                      </p>
                     </div>
                   </Link>
                 </div>
-
-
               );
             })}
-
           </div>
 
-          {/* Pagination */}
+          {/* PAGINATION */}
           {totalPages > 1 && (
             <div className="pagination">
-              {currentPage > 1 && (
+              {Array.from({ length: totalPages }).map((_, i) => (
                 <button
-                  onClick={() => paginate(currentPage - 1)}
-                  className="page-btn prev-btn"
+                  key={i}
+                  onClick={() => paginate(i + 1)}
+                  className={`page-btn ${currentPage === i + 1 ? "active" : ""
+                    }`}
                 >
-                  Précédent
-                </button>
-              )}
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
-                <button
-                  key={number}
-                  onClick={() => paginate(number)}
-                  className={`page-btn ${currentPage === number ? 'active' : ''}`}
-                >
-                  {number}
+                  {i + 1}
                 </button>
               ))}
-
-              {currentPage < totalPages && (
-                <button
-                  onClick={() => paginate(currentPage + 1)}
-                  className="page-btn next-btn"
-                >
-                  Suivant
-                </button>
-              )}
             </div>
           )}
         </>
       )}
+      <Footer />
     </div>
   );
 }

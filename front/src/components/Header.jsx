@@ -4,6 +4,7 @@ import "../assets/styles/Header.css";
 import { FaSearch, FaHeart, FaShoppingCart } from "react-icons/fa";
 import { AuthContext } from "../context/AuthContext";
 import { useLogout } from "../hooks/useLogout";
+import { getAvatarUrl } from "../utils/avatar";
 
 export default function Header() {
     const { user } = useContext(AuthContext);
@@ -16,6 +17,8 @@ export default function Header() {
         logout();
         navigate("/login");
     };
+
+    const avatarUrl = getAvatarUrl(user);
 
     return (
         <header className="header">
@@ -34,7 +37,12 @@ export default function Header() {
 
                 <Link to="/shop">Shop</Link>
 
-                {user && <Link to="/chat">Chat</Link>}
+                {user?.role === "client" && (
+                    <Link to="/my-orders">My Orders</Link>
+                )}
+
+                {user?.role === "client" && <Link to="/chat">Chat</Link>}
+                {user?.role === "seller" && <Link to="/chat">Chat</Link>}
             </nav>
 
             {/* ICONS */}
@@ -46,7 +54,21 @@ export default function Header() {
                         onClick={() => setOpenMenu(!openMenu)}
                         aria-label="User menu"
                     >
-                        {user ? "🧑" : "🙂"}
+                        {console.log(avatarUrl)}
+                        {avatarUrl ? (
+                            <img
+                                src={avatarUrl}
+                                alt="Profile"
+                                className="header-avatar-img"
+                            />
+                        ) : (
+                            <div className="header-avatar-fallback">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="12" cy="7" r="4"></circle>
+                                </svg>
+                            </div>
+                        )}
                     </button>
 
                     {openMenu && (
@@ -81,19 +103,17 @@ export default function Header() {
                     )}
                 </div>
 
-                {/* SEARCH */}
-                <Link to="/" title="Search">
-                    <FaSearch className="icon" />
-                </Link>
 
-                {/* ❤️ FAVORITES — CLIENT ONLY */}
+
+
+                {/* FAVORITES */}
                 {user?.role === "client" && (
                     <Link to="/favorites" title="Favorites">
                         <FaHeart className="icon" />
                     </Link>
                 )}
 
-                {/* 🛒 CART — CLIENT ONLY */}
+                {/* CART */}
                 {user?.role === "client" && (
                     <Link to="/cart" title="Cart">
                         <FaShoppingCart className="icon" />

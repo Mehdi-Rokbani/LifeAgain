@@ -527,3 +527,15 @@ html {
   padding-top: 70px;
   /* header height + breathing room */
 }
+
+section {
+  scroll-margin-top: 80px;
+}
+
+button {
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  opacity: 0.95;
+}

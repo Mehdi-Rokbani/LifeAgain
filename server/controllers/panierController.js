@@ -20,24 +20,50 @@ const getOrCreatePanier = async (userId) => {
 };
 
 // --------------------------------------------------
-// GET MY PANIER
+// GET MY PANIER (AUTO CLEAN + LIVE PRICE SYNC)
 // GET /api/panier/me
 // --------------------------------------------------
 export const getMyPanier = async (req, res) => {
     try {
-        const panier = await Panier.findOne({
+        let panier = await Panier.findOne({
             user: req.user.id,
             status: "active",
         }).populate({
             path: "items.product",
             populate: {
                 path: "seller",
-                select: "username", // 👈 public seller field
+                select: "username",
             },
         });
 
         if (!panier) {
             return res.json({ items: [] });
+        }
+
+        let dirty = false;
+
+        panier.items = panier.items.filter((item) => {
+            if (!item.product) {
+                dirty = true;
+                return false;
+            }
+
+            if (item.product.status !== "available") {
+                dirty = true;
+                return false;
+            }
+
+            // 🔄 SYNC LIVE PRICE
+            if (item.price !== item.product.price) {
+                item.price = item.product.price;
+                dirty = true;
+            }
+
+            return true;
+        });
+
+        if (dirty) {
+            await panier.save();
         }
 
         res.json(panier);
@@ -46,9 +72,8 @@ export const getMyPanier = async (req, res) => {
     }
 };
 
-
 // --------------------------------------------------
-// ADD PRODUCT (USED MARKETPLACE)
+// ADD PRODUCT
 // POST /api/panier/add
 // --------------------------------------------------
 export const addProduct = async (req, res) => {
@@ -61,7 +86,9 @@ export const addProduct = async (req, res) => {
         }
 
         if (product.status !== "available") {
-            return res.status(400).json({ message: "Produit déjà vendu" });
+            return res.status(400).json({
+                message: "Ce produit n’est plus disponible",
+            });
         }
 
         const panier = await getOrCreatePanier(req.user.id);
@@ -71,7 +98,7 @@ export const addProduct = async (req, res) => {
         );
 
         if (exists) {
-            return res.status(400).json({
+            return res.status(409).json({
                 message: "Produit déjà dans le panier",
             });
         }
@@ -79,12 +106,16 @@ export const addProduct = async (req, res) => {
         panier.items.push({
             product: productId,
             quantity: 1,
-            price: product.price,
+            price: product.price, // initial price, will auto-sync later
         });
 
         await panier.save();
 
-        const populated = await panier.populate("items.product");
+        const populated = await panier.populate({
+            path: "items.product",
+            populate: { path: "seller", select: "username" },
+        });
+
         res.json(populated);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -114,7 +145,11 @@ export const removeProduct = async (req, res) => {
 
         await panier.save();
 
-        const populated = await panier.populate("items.product");
+        const populated = await panier.populate({
+            path: "items.product",
+            populate: { path: "seller", select: "username" },
+        });
+
         res.json(populated);
     } catch (err) {
         res.status(500).json({ message: err.message });

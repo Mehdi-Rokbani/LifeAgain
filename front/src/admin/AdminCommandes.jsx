@@ -177,7 +177,7 @@ export default function AdminCommandes() {
                                             }}
                                         >
                                             <option value="pending">Pending</option>
-                                            <option value="paid">Paid</option>
+
                                             <option value="completed">
                                                 Completed
                                             </option>

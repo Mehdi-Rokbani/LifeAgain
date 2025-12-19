@@ -240,3 +240,35 @@ export const deleteUser = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
+
+
+
+
+export const uploadProfileImage = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "No image uploaded" });
+        }
+
+        const imagePath = `/uploads/profile/${req.file.filename}`;
+
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            { profilePicture: imagePath },
+            {
+                new: true,
+                runValidators: false, // 🔥 CRITICAL
+            }
+        ).select("-password");
+
+        res.json({
+            success: true,
+            user,
+        });
+    } catch (err) {
+        console.error("UPLOAD PROFILE IMAGE ERROR:", err);
+        res.status(500).json({
+            message: "Failed to upload profile image",
+        });
+    }
+};

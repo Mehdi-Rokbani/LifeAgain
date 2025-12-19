@@ -581,88 +581,163 @@ export const getSellerListings = async (req, res) => {
 
 //-------------------------------------- update listing wiwiwiwiwiw -------------------------------------------------------//
 
+
+/* ===============================
+   UPDATE LISTING (SELLER)
+   =============================== */
 export const updateListing = async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id);
 
     if (!listing) {
-      return res.status(404).json({ success: false, error: "Listing not found" });
-    }
-
-    if (listing.seller.toString() !== req.user.id) {
-      return res.status(403).json({ success: false, error: "Not allowed" });
-    }
-
-    if (listing.status !== "available") {
-      return res.status(400).json({
+      return res.status(404).json({
         success: false,
-        error: "Sold or archived listings cannot be edited",
+        error: "Listing not found",
       });
     }
 
-    // 🔒 TITLE UPDATE CHECK
-    if (req.body.title) {
-      const newTitleNorm = req.body.title.trim().toLowerCase();
+    // 🔐 Owner check
+    if (listing.seller.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        error: "Not allowed to edit this listing",
+      });
+    }
+
+    // 🚫 Sold listings cannot be edited
+    if (listing.status === "sold") {
+      return res.status(400).json({
+        success: false,
+        error: "Sold listings cannot be edited",
+      });
+    }
+
+    const {
+      title,
+      description,
+      price,
+      condition,
+      category,
+    } = req.body;
+
+    // ================= TITLE (UNIQUE PER SELLER) =================
+    if (title && title !== listing.title) {
+      const titleNormalized = title.trim().toLowerCase();
 
       const duplicate = await Listing.findOne({
-        seller: req.user.id,
-        titleNormalized: newTitleNorm,
         _id: { $ne: listing._id },
+        seller: req.user.id,
+        titleNormalized,
       });
 
       if (duplicate) {
         return res.status(409).json({
           success: false,
-          error: "Vous avez déjà une annonce avec ce titre",
+          error: "You already have a listing with this title",
         });
       }
 
-      listing.title = req.body.title.trim();
-      listing.titleNormalized = newTitleNorm;
+      listing.title = title.trim();
+      listing.titleNormalized = titleNormalized;
     }
 
-    if (req.body.price !== undefined) {
-      const p = Number(req.body.price);
+    // ================= PRICE =================
+    if (price !== undefined) {
+      const p = Number(price);
       if (Number.isNaN(p) || p < 0.5) {
-        return res
-          .status(400)
-          .json({ success: false, error: "Prix invalide (min 0.5 TND)" });
+        return res.status(400).json({
+          success: false,
+          error: "Invalid price (minimum 0.5 TND)",
+        });
       }
       listing.price = p;
     }
 
-    ["description", "condition", "category"].forEach((f) => {
-      if (req.body[f] !== undefined) listing[f] = req.body[f];
-    });
+    // ================= OTHER FIELDS =================
+    if (description !== undefined) listing.description = description;
+    if (condition !== undefined) listing.condition = condition;
+    if (category !== undefined) listing.category = category;
 
     await listing.save();
 
-    res.json({ success: true, listing });
+    res.json({
+      success: true,
+      message: "Listing updated successfully",
+      listing,
+    });
+
   } catch (err) {
-    console.error("❌ updateListing ERROR:", err);
-    res.status(500).json({ success: false, error: "Server error" });
+    console.error("UPDATE LISTING ERROR:", err);
+
+    // extra safety for unique index
+    if (err.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        error: "Duplicate listing title for this seller",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: "Server error",
+    });
   }
 };
 
 
+
+import Panier from "../models/Panier.js";
+import Favorite from "../models/Favorites.js";
 
 export const deleteListing = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    const listing = await Listing.findById(req.params.id);
+    const listing = await Listing.findById(req.params.id).session(session);
 
-    if (!listing) return res.status(404).json({ success: false });
+    if (!listing) {
+      await session.abortTransaction();
+      return res.status(404).json({ success: false, message: "Listing not found" });
+    }
 
-    if (listing.seller.toString() !== req.user.id)
-      return res.status(403).json({ success: false });
+    // 🔐 Owner check (seller)
+    if (listing.seller.toString() !== req.user.id) {
+      await session.abortTransaction();
+      return res.status(403).json({ success: false, message: "Forbidden" });
+    }
 
-    await Image.deleteMany({ listing: req.params.id });
-    await listing.deleteOne();
+    const listingId = listing._id;
 
-    res.json({ success: true });
-  } catch {
-    res.status(500).json({ success: false });
+    // 1️⃣ Delete images
+    await Image.deleteMany({ listing: listingId }).session(session);
+
+    // 2️⃣ Remove from ALL carts
+    await Panier.updateMany(
+      { "items.product": listingId },
+      { $pull: { items: { product: listingId } } }
+    ).session(session);
+
+    // 3️⃣ Remove from ALL favorites
+    await Favorite.deleteMany({ listing: listingId }).session(session);
+
+    // 4️⃣ Delete listing
+    await listing.deleteOne({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.json({ success: true, message: "Listing deleted with cascade" });
+
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+
+    console.error("DELETE LISTING CASCADE ERROR:", err);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 
 export const getImagesByListing = async (req, res) => {

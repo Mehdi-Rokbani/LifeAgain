@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import ListingsList from "./pages/ListingList";
 import ListingDetail from "./pages/ListingDetail";
 import ComparePage from "./pages/ComparePage";
+import NotFound from "./components/NotFound";
 
 /* ===================== CLIENT ===================== */
 import Cart from "./pages/Cart/Cart";
@@ -25,6 +26,7 @@ import Overview from "./sellerdashboard/Overview";
 import MyListings from "./sellerdashboard/MyListings";
 import EditListing from "./sellerdashboard/EditListing";
 import Settings from "./sellerdashboard/Settings";
+import MyOrders from "./sellerdashboard/SellerOrders";
 
 /* ===================== ADMIN ===================== */
 import AdminLayout from "./admin/AdminLayout";
@@ -68,6 +70,7 @@ export default function App() {
         <Route path="/shop" element={<ListingsList />} />
         <Route path="/listings/:id" element={<ListingDetail />} />
         <Route path="/compare/:id" element={<ComparePage />} />
+        <Route path="*" element={<NotFound />} />
 
         {/* ===================================================
                             CLIENT
@@ -81,6 +84,14 @@ export default function App() {
           }
         />
 
+        <Route
+          path="/my-orders"
+          element={
+            <ProtectedRoute allowedRoles={["client"]}>
+              <MyOrders />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/favorites"
@@ -134,6 +145,16 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/dashboard/orders"
+          element={
+            <ProtectedRoute allowedRoles={["seller"]}>
+              <MyOrders />
+            </ProtectedRoute>
+          }
+        />
+
 
         <Route
           path="/dashboard"

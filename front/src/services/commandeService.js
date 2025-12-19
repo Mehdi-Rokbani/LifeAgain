@@ -1,52 +1,36 @@
-// src/services/commandeService.js
-import axios from "axios";
-
 const API_URL = "http://localhost:5000/api/commandes";
 
-class CommandeService {
-    async createCommandeFromPanier(billingDetails, paymentMethod, notes = "") {
-        const token = localStorage.getItem("token");
+const createCommandeFromPanier = async (billingDetails, paymentMethod) => {
+    const res = await fetch(`${API_URL}/checkout`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ billingDetails, paymentMethod }),
+    });
 
-        const res = await axios.post(
-            API_URL,
-            {
-                billingDetails,
-                paymentMethod,
-                notes,
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            }
-        );
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message);
+    return data;
+};
 
-        return res.data;
-    }
+const getMyCommandes = async () => {
+    const res = await fetch(`${API_URL}/me`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    });
+    return res.json();
+};
 
-    async getCommandesByUser(userId) {
-        const token = localStorage.getItem("token");
+const getSellerCommandes = async () => {
+    const res = await fetch(`${API_URL}/seller`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    });
+    return res.json();
+};
 
-        const res = await axios.get(`${API_URL}/user/${userId}`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        return res.data;
-    }
-
-    async getCommandeById(commandeId) {
-        const token = localStorage.getItem("token");
-
-        const res = await axios.get(`${API_URL}/${commandeId}`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        return res.data;
-    }
-}
-
-export default new CommandeService();
+export default {
+    createCommandeFromPanier,
+    getMyCommandes,
+    getSellerCommandes,
+};

@@ -17,7 +17,9 @@ export default function AdminCommandeDetails() {
                 const res = await fetch(
                     `http://localhost:5000/api/admin/commandes/${id}`,
                     {
-                        headers: { Authorization: `Bearer ${token}` },
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
                     }
                 );
 
@@ -26,7 +28,7 @@ export default function AdminCommandeDetails() {
 
                 setCommande(data.commande);
             } catch {
-                toast.error("Failed to load commande");
+                toast.error("Failed to load order");
                 navigate("/admin/commandes");
             } finally {
                 setLoading(false);
@@ -38,17 +40,14 @@ export default function AdminCommandeDetails() {
 
     // ---------------- UPDATE STATUS ----------------
     const updateStatus = async (status) => {
-        if (
-            commande.status === "completed" ||
-            commande.status === "cancelled"
-        ) {
+        if (commande.status === status) return;
+
+        if (commande.status === "completed" || commande.status === "cancelled") {
+            toast.info("This order is locked");
             return;
         }
 
-        const ok = window.confirm(
-            `Change order status to "${status}"?`
-        );
-        if (!ok) return;
+        const toastId = toast.loading("Updating order status...");
 
         try {
             const res = await fetch(
@@ -66,10 +65,21 @@ export default function AdminCommandeDetails() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
-            toast.success("Status updated");
+            toast.update(toastId, {
+                render: "Order status updated",
+                type: "success",
+                isLoading: false,
+                autoClose: 2000,
+            });
+
             setCommande({ ...commande, status });
-        } catch {
-            toast.error("Failed to update status");
+        } catch (err) {
+            toast.update(toastId, {
+                render: err.message || "Update failed",
+                type: "error",
+                isLoading: false,
+                autoClose: 3000,
+            });
         }
     };
 
@@ -95,7 +105,7 @@ export default function AdminCommandeDetails() {
                 <p><strong>Total:</strong> {commande.totalPrice} TND</p>
             </div>
 
-            {/* STATUS ACTION */}
+            {/* STATUS SELECT */}
             <div style={{ marginBottom: 30 }}>
                 <label style={{ fontWeight: 600 }}>Update status:</label>
                 <br />
@@ -103,10 +113,13 @@ export default function AdminCommandeDetails() {
                     value={commande.status}
                     disabled={locked}
                     onChange={(e) => updateStatus(e.target.value)}
-                    style={{ padding: 8, marginTop: 8 }}
+                    style={{
+                        padding: 8,
+                        marginTop: 8,
+                        minWidth: 200,
+                    }}
                 >
                     <option value="pending">Pending</option>
-                    <option value="paid">Paid</option>
                     <option value="completed">Completed</option>
                     <option value="cancelled">Cancelled</option>
                 </select>
@@ -136,14 +149,13 @@ export default function AdminCommandeDetails() {
                 <tbody>
                     {commande.items.map((item) => (
                         <tr key={item._id} style={{ borderBottom: "1px solid #eee" }}>
-                            <td>{item.product?.title || "—"}</td>
-                            <td>{item.product?.seller?.username || "—"}</td>
+                            <td>{item.listing?.title || "—"}</td>
+                            <td>{item.listing?.seller?.username || "—"}</td>
                             <td>{item.price} TND</td>
                             <td>{item.quantity}</td>
                             <td>{item.price * item.quantity} TND</td>
                         </tr>
                     ))}
-                    {console.log(commande.items)}
                 </tbody>
             </table>
 

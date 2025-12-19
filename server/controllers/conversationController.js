@@ -70,7 +70,7 @@ export const getUserConversations = async (req, res) => {
         let conversations = await Conversation.find({
             participants: userId
         })
-            .populate("participants", "username role")
+            .populate("participants", "username role profilePicture")
             .sort({ updatedAt: -1 });
 
         // Add: otherUser + unread flags

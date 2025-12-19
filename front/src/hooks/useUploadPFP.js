@@ -1,63 +1,35 @@
 import { useState } from "react";
-import axios from "axios";
 export const useUploadPFP = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     const uploadPFP = async (file) => {
-        if (!file) {
-            setError("No file selected");
-            return null;
-        }
-
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-            setError("Please select an image file");
-            return null;
-        }
-
-        // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            setError("Image size must be less than 5MB");
-            return null;
-        }
-
         setLoading(true);
         setError(null);
 
         try {
-            const token = localStorage.getItem("token");
-            
-            if (!token) {
-                setError("No authentication token found");
-                return null;
-            }
+            const formData = new FormData();
+            formData.append("image", file); // ✅ MUST MATCH multer
 
-            const form = new FormData();
-            form.append("picture", file);
-
-            console.log("Uploading file:", file.name, file.size); // Debug log
-
-            const res = await axios.post(
-                "http://localhost:5000/api/user/upload-picture",
-                form,
+            const res = await fetch(
+                "http://localhost:5000/api/user/me/profile-image",
                 {
+                    method: "PUT",
                     headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "multipart/form-data",
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
                     },
-                    timeout: 30000, // 30 second timeout
+                    body: formData,
                 }
             );
 
-            console.log("Upload response:", res.data); // Debug log
-            return res.data.user;
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+
+            localStorage.setItem("user", JSON.stringify(data.user));
+            return data.user;
 
         } catch (err) {
-            console.log("PFP UPLOAD ERROR:", err.response?.data || err.message);
-            const errorMessage = err.response?.data?.message || "Upload failed. Please try again.";
-            setError(errorMessage);
-            return null;
+            setError(err.message || "Profile image upload failed");
         } finally {
             setLoading(false);
         }

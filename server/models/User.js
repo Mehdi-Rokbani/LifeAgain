@@ -38,7 +38,7 @@ const userSchema = new mongoose.Schema(
 
         profilePicture: {
             type: String, // store image URL or Cloudinary path
-            default: "",
+            default: null,
         },
         addresses: [{
             type: mongoose.Schema.Types.ObjectId,
@@ -48,9 +48,9 @@ const userSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: "Listing"
         }],
-       /* verificationCode: { type: String },
-        verificationExpires: { type: Date },
-        isVerified: { type: Boolean, default: false },*/
+        /* verificationCode: { type: String },
+         verificationExpires: { type: Date },
+         isVerified: { type: Boolean, default: false },*/
 
 
         /*addresses: [

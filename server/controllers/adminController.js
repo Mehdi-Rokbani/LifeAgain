@@ -305,28 +305,53 @@ export const adminGetAllCommandes = async (req, res) => {
 /**
  * UPDATE COMMANDE STATUS (admin)
  */
+
+
+/**
+ * PUT /api/admin/commandes/:id/status
+ */
 export const adminUpdateCommandeStatus = async (req, res) => {
-    try {
-        const { status } = req.body;
+    const { status } = req.body;
 
-        const commande = await Commande.findByIdAndUpdate(
-            req.params.id,
-            { status },
-            { new: true }
-        ).populate("items.listing");
-
-        if (!commande) {
-            return res.status(404).json({ success: false });
-        }
-
-        res.json({
-            success: true,
-            commande,
-        });
-    } catch (err) {
-        res.status(500).json({ success: false });
+    if (!["pending", "completed", "cancelled"].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
     }
+
+    const commande = await Commande.findById(req.params.id)
+        .populate("items.listing");
+
+    if (!commande) {
+        return res.status(404).json({ message: "Commande not found" });
+    }
+
+    // 🔒 Lock final states
+    if (["completed", "cancelled"].includes(commande.status)) {
+        return res
+            .status(400)
+            .json({ message: "Commande already finalized" });
+    }
+
+    // 🔴 ADMIN CANCEL LOGIC
+    if (status === "cancelled") {
+        for (const item of commande.items) {
+            const listing = item.listing;
+
+            if (listing) {
+                listing.status = "available";
+                await listing.save();
+            }
+        }
+    }
+
+    commande.status = status;
+    await commande.save();
+
+    res.json({
+        success: true,
+        status: commande.status,
+    });
 };
+
 
 export const adminCreateListing = async (req, res) => {
     try {
@@ -493,13 +518,13 @@ export const adminGetListingById = async (req, res) => {
         });
     }
 };
+
 export const adminGetCommandeById = async (req, res) => {
     try {
         const commande = await Commande.findById(req.params.id)
-            .populate("buyer", "email username")
+            .populate("buyer", "email")
             .populate({
                 path: "items.listing",
-                select: "title price images seller",
                 populate: {
                     path: "seller",
                     select: "username email",
@@ -507,21 +532,12 @@ export const adminGetCommandeById = async (req, res) => {
             });
 
         if (!commande) {
-            return res.status(404).json({
-                success: false,
-                message: "Commande not found",
-            });
+            return res.status(404).json({ message: "Commande not found" });
         }
 
-        res.json({
-            success: true,
-            commande,
-        });
+        res.json({ success: true, commande });
     } catch (err) {
-        console.error("ADMIN GET COMMANDE ERROR:", err);
-        res.status(500).json({
-            success: false,
-            message: "Server error",
-        });
+        console.error("ADMIN COMMANDE DETAILS ERROR:", err);
+        res.status(500).json({ message: "Server error" });
     }
 };
