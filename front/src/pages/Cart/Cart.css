@@ -289,3 +289,19 @@
         height: 60px;
     }
 }
+
+.clickable {
+    cursor: pointer;
+}
+
+.cart-product-name.clickable:hover {
+    text-decoration: underline;
+}
+
+.cart-product-image.clickable img {
+    transition: transform 0.2s ease;
+}
+
+.cart-product-image.clickable:hover img {
+    transform: scale(1.05);
+}

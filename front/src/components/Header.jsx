@@ -1,8 +1,8 @@
 import React, { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../assets/styles/Header.css";
-import { FaUser, FaSearch, FaHeart, FaShoppingCart } from "react-icons/fa";
-import { AuthContext } from '../context/AuthContext';
+import { FaSearch, FaHeart, FaShoppingCart } from "react-icons/fa";
+import { AuthContext } from "../context/AuthContext";
 import { useLogout } from "../hooks/useLogout";
 
 export default function Header() {
@@ -13,7 +13,7 @@ export default function Header() {
     const [openMenu, setOpenMenu] = useState(false);
 
     const handleLogout = () => {
-        logout(); // clears user + token + updates context
+        logout();
         navigate("/login");
     };
 
@@ -29,24 +29,17 @@ export default function Header() {
             <nav className="header-nav">
                 <Link to="/">Home</Link>
 
-                {user && user.role === 'seller' && (
-                    <Link to="/dashboard">Dashboard</Link>
-                )}
-                {user && user.role === 'admin' && (
-                    <Link to="/admin">Dashboard</Link>
-                )}
+                {user?.role === "seller" && <Link to="/dashboard">Dashboard</Link>}
+                {user?.role === "admin" && <Link to="/admin">Dashboard</Link>}
+
                 <Link to="/shop">Shop</Link>
-                {user && (
-                    <Link to="/chat">Chat</Link>
-                )}
 
-
+                {user && <Link to="/chat">Chat</Link>}
             </nav>
 
             {/* ICONS */}
             <div className="header-icons">
-
-                {/* PROFILE DROPDOWN */}
+                {/* PROFILE */}
                 <div className="profile-wrapper">
                     <button
                         className="profile-avatar"
@@ -56,12 +49,15 @@ export default function Header() {
                         {user ? "🧑" : "🙂"}
                     </button>
 
-
                     {openMenu && (
                         <div className="profile-dropdown">
                             {user ? (
                                 <>
-                                    <Link to="/profile" className="dropdown-item">
+                                    <Link
+                                        to="/profile"
+                                        className="dropdown-item"
+                                        onClick={() => setOpenMenu(false)}
+                                    >
                                         👤 Profile
                                     </Link>
 
@@ -73,7 +69,11 @@ export default function Header() {
                                     </button>
                                 </>
                             ) : (
-                                <Link to="/login" className="dropdown-item">
+                                <Link
+                                    to="/login"
+                                    className="dropdown-item"
+                                    onClick={() => setOpenMenu(false)}
+                                >
                                     🔐 Login
                                 </Link>
                             )}
@@ -81,16 +81,24 @@ export default function Header() {
                     )}
                 </div>
 
-                <Link to="/">
+                {/* SEARCH */}
+                <Link to="/" title="Search">
                     <FaSearch className="icon" />
                 </Link>
 
-                {user && user.role === 'client' && (
-                    <Link to="/cart"><FaShoppingCart className="icon" /></Link>
+                {/* ❤️ FAVORITES — CLIENT ONLY */}
+                {user?.role === "client" && (
+                    <Link to="/favorites" title="Favorites">
+                        <FaHeart className="icon" />
+                    </Link>
                 )}
 
-
-
+                {/* 🛒 CART — CLIENT ONLY */}
+                {user?.role === "client" && (
+                    <Link to="/cart" title="Cart">
+                        <FaShoppingCart className="icon" />
+                    </Link>
+                )}
             </div>
         </header>
     );

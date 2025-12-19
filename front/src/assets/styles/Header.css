@@ -229,3 +229,12 @@
         transform: translateY(0);
     }
 }
+
+.header-icons .icon {
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.header-icons .icon:hover {
+    color: #e74c3c;
+    transform: scale(1.1);
+}

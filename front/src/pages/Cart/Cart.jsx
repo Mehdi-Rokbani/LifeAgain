@@ -8,6 +8,10 @@ const Cart = () => {
     const navigate = useNavigate();
     const { panier, loading, removeProduct, totalPrice, itemCount } = usePanier();
 
+    const goToListing = (id) => {
+        navigate(`/listings/${id}`);
+    };
+
     if (loading && !panier) {
         return <div className="cart-loading">Chargement du panier...</div>;
     }
@@ -28,7 +32,7 @@ const Cart = () => {
         <div className="cart-page">
             <Header />
 
-            {/* Hero */}
+            {/* HERO */}
             <div className="cart-hero">
                 <h1>Cart</h1>
                 <p className="breadcrumb">
@@ -53,7 +57,6 @@ const Cart = () => {
                         <tbody>
                             {panier.items.map((item) => {
                                 const product = item.product;
-                                console.log("Cart Item Product:", product);
                                 if (!product) return null;
 
                                 const price = product.price || 0;
@@ -64,9 +67,14 @@ const Cart = () => {
 
                                 return (
                                     <tr key={product._id}>
+                                        {/* PRODUCT */}
                                         <td>
                                             <div className="cart-product">
-                                                <div className="cart-product-image">
+                                                {/* IMAGE */}
+                                                <div
+                                                    className="cart-product-image clickable"
+                                                    onClick={() => goToListing(product._id)}
+                                                >
                                                     {product.images?.[0] ? (
                                                         <img
                                                             src={`http://localhost:5000${product.images[0]}`}
@@ -77,22 +85,27 @@ const Cart = () => {
                                                     )}
                                                 </div>
 
+                                                {/* INFO */}
                                                 <div className="cart-product-info">
-                                                    <span className="cart-product-name">
-                                                        {product.title}{" "}
+                                                    <span
+                                                        className="cart-product-name clickable"
+                                                        onClick={() => goToListing(product._id)}
+                                                    >
+                                                        {product.title}
                                                         <span className="seller-name">
-                                                            – {sellerName}
+                                                            {" "}– {sellerName}
                                                         </span>
                                                     </span>
                                                 </div>
                                             </div>
                                         </td>
 
+                                        {/* PRICE */}
                                         <td className="cart-price">
                                             {price.toFixed(2)} TND
                                         </td>
 
-                                        {/* FIXED QUANTITY */}
+                                        {/* QUANTITY (FIXED) */}
                                         <td>
                                             <span className="fixed-quantity">1</span>
                                         </td>
@@ -102,6 +115,7 @@ const Cart = () => {
                                             {price.toFixed(2)} TND
                                         </td>
 
+                                        {/* REMOVE */}
                                         <td>
                                             <button
                                                 className="btn-remove"
