@@ -28,7 +28,13 @@ export const getMyPanier = async (req, res) => {
         const panier = await Panier.findOne({
             user: req.user.id,
             status: "active",
-        }).populate("items.product");
+        }).populate({
+            path: "items.product",
+            populate: {
+                path: "seller",
+                select: "username", // 👈 public seller field
+            },
+        });
 
         if (!panier) {
             return res.json({ items: [] });
@@ -39,6 +45,7 @@ export const getMyPanier = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
+
 
 // --------------------------------------------------
 // ADD PRODUCT (USED MARKETPLACE)

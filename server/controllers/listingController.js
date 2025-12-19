@@ -15,130 +15,114 @@ export const createListing = async (req, res) => {
       category,
       phone,
       condition,
-      address
+      address,
     } = req.body;
-
-    // ----- VALIDATIONS -----
-    if (!address) {
-      return res.status(400).json({
-        success: false,
-        error: "Adresse requise"
-      });
-    }
 
     if (!title || !description || !price || !category || !address) {
       return res.status(400).json({
         success: false,
-        error: "Champs requis manquants"
+        error: "Champs requis manquants",
       });
     }
 
-    if (isNaN(price) || Number(price) < 0.5) {
+    const numericPrice = Number(price);
+    if (Number.isNaN(numericPrice) || numericPrice < 0.5) {
       return res.status(400).json({
         success: false,
-        error: "Prix invalide (min 0.5 TND)"
+        error: "Prix invalide (min 0.5 TND)",
       });
     }
 
-
-    if (!mongoose.Types.ObjectId.isValid(category)) {
+    if (
+      !mongoose.Types.ObjectId.isValid(category) ||
+      !mongoose.Types.ObjectId.isValid(address)
+    ) {
       return res.status(400).json({
         success: false,
-        error: "Catégorie invalide"
+        error: "ID invalide",
       });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(address)) {
-      return res.status(400).json({
+    // 🔒 Normalize title
+    const titleNormalized = title.trim().toLowerCase();
+
+    // 🔒 DUPLICATE CHECK (seller + title)
+    const existing = await Listing.findOne({
+      seller: req.user.id,
+      titleNormalized,
+    });
+
+    if (existing) {
+      return res.status(409).json({
         success: false,
-        error: "Adresse invalide"
+        error: "Vous avez déjà une annonce avec ce titre",
       });
     }
 
-    // ==========================================================
-    // ---------------------- IMAGE LOGIC -----------------------
-    // ==========================================================
-
-    const coverFile = req.files?.cover?.[0] || null;
+    const coverFile = req.files?.cover?.[0];
     const photoFiles = req.files?.photos || [];
 
     if (!coverFile) {
       return res.status(400).json({
         success: false,
-        error: "Une photo de couverture est obligatoire"
+        error: "Une photo de couverture est obligatoire",
       });
     }
 
-    // ONLY URLs inside Listing.images
-    const imageUrls = [];
-
-    imageUrls.push(`/uploads/${coverFile.filename}`);
-
-    photoFiles.forEach(file => {
-      imageUrls.push(`/uploads/${file.filename}`);
-    });
-
-    // ==========================================================
-    // ------------------ CREATE LISTING ------------------------
-    // ==========================================================
+    const imageUrls = [
+      `/uploads/${coverFile.filename}`,
+      ...photoFiles.map((f) => `/uploads/${f.filename}`),
+    ];
 
     const listing = await Listing.create({
       title: title.trim(),
+      titleNormalized,
       description: description.trim(),
-      price: Number(price),
-      phone: phone || null,
+      price: numericPrice,
       condition: condition || "used",
       category,
       seller: req.user.id,
       address,
-      images: imageUrls,        // <-- URLs only (frontend uses this)
+      images: imageUrls,
       locationText: "Tunisie",
       location: {
         type: "Point",
-        coordinates: [10.1815, 36.8065]
-      }
+        coordinates: [10.1815, 36.8065],
+      },
     });
 
-    // ==========================================================
-    // ----------- NOW STORE REAL IMAGES IN DB -----------------
-    // ==========================================================
-
-    const imageDocuments = [];
-
-    // cover (order = 0)
-    imageDocuments.push({
-      listing: listing._id,
-      url: `/uploads/${coverFile.filename}`,
-      isCover: true,
-      order: 0
-    });
-
-    // additional photos (order starts at 1)
-    photoFiles.forEach((file, index) => {
-      imageDocuments.push({
+    // Store images in Image collection
+    const imageDocs = [
+      {
         listing: listing._id,
-        url: `/uploads/${file.filename}`,
+        url: imageUrls[0],
+        isCover: true,
+        order: 0,
+      },
+      ...photoFiles.map((f, i) => ({
+        listing: listing._id,
+        url: `/uploads/${f.filename}`,
         isCover: false,
-        order: index + 1
-      });
-    });
+        order: i + 1,
+      })),
+    ];
 
-    await Image.insertMany(imageDocuments);
+    await Image.insertMany(imageDocs);
 
-    return res.status(201).json({
+    res.status(201).json({
       success: true,
       message: "Annonce créée avec succès",
-      listing
+      listing,
     });
-
   } catch (err) {
     console.error("❌ createListing ERROR:", err);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
-      error: "Erreur lors de la création de l'annonce"
+      error: "Erreur lors de la création de l'annonce",
     });
   }
 };
+
 
 
 ///////////////////////////
@@ -194,6 +178,7 @@ export const updateCoverImage = async (req, res) => {
 /* ===========================================================
    GET ALL LISTINGS
 =========================================================== */
+
 export const getListings = async (req, res) => {
   try {
     const { category, minPrice, maxPrice, search } = req.query;
@@ -204,7 +189,7 @@ export const getListings = async (req, res) => {
       if (mongoose.Types.ObjectId.isValid(category)) {
         filter.category = category;
       } else {
-        const cat = await Category.findOne({ name: new RegExp(category, 'i') });
+        const cat = await Category.findOne({ name: new RegExp(category, "i") });
         if (cat) filter.category = cat._id;
       }
     }
@@ -217,32 +202,31 @@ export const getListings = async (req, res) => {
 
     if (search) {
       filter.$or = [
-        { title: new RegExp(search, 'i') },
-        { description: new RegExp(search, 'i') }
+        { title: new RegExp(search, "i") },
+        { description: new RegExp(search, "i") },
       ];
     }
 
     const listings = await Listing.find(filter)
       .sort({ createdAt: -1 })
-      .populate("images")
-      .populate("category")
+      .populate("category", "name")
+      .populate("seller", "username") // 🔥 IMPORTANT
       .lean();
-
-    console.log(`📊 ${listings.length} annonces récupérées`);
 
     res.json({
       success: true,
       count: listings.length,
-      listings
+      listings,
     });
   } catch (err) {
     console.error("❌ getListings ERROR:", err);
     res.status(500).json({
       success: false,
-      error: "Erreur lors de la récupération des annonces"
+      error: "Erreur lors de la récupération des annonces",
     });
   }
 };
+
 
 
 /* ===========================================================
@@ -340,45 +324,43 @@ export const deleteListingImage = async (req, res) => {
 /* ===========================================================
    GET LISTING BY ID
 =========================================================== */
+
 export const getListingById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    console.log("🔍 Récupération annonce ID:", id);
-
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         success: false,
-        error: "ID invalide"
+        error: "ID invalide",
       });
     }
 
     const listing = await Listing.findById(id)
-      .populate("images")
-      .populate("category")
+      .populate("category", "name")
+      .populate("seller", "username") // 🔥 IMPORTANT
       .lean();
 
     if (!listing) {
       return res.status(404).json({
         success: false,
-        error: "Annonce introuvable"
+        error: "Annonce introuvable",
       });
     }
 
-    console.log("✅ Annonce trouvée:", listing.title);
-
     res.json({
       success: true,
-      listing
+      listing,
     });
   } catch (err) {
     console.error("❌ getListingById ERROR:", err);
     res.status(500).json({
       success: false,
-      error: "Erreur lors de la récupération de l'annonce"
+      error: "Erreur lors de la récupération de l'annonce",
     });
   }
 };
+
 
 /* ===========================================================
    DEEPSEEK API - Version simplifiée et robuste
@@ -580,10 +562,13 @@ export const compareListing = async (req, res) => {
 
 export const getSellerListings = async (req, res) => {
   try {
-    const sellerId = req.user.id; // secure: take from token
+    const sellerId = req.user.id;
 
     const listings = await Listing.find({ seller: sellerId })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .populate("category", "name")
+      .populate("seller", "username")
+      .lean();
 
     res.json({ success: true, listings });
   } catch {
@@ -593,45 +578,72 @@ export const getSellerListings = async (req, res) => {
 
 
 
+
 //-------------------------------------- update listing wiwiwiwiwiw -------------------------------------------------------//
+
 export const updateListing = async (req, res) => {
   try {
     const listing = await Listing.findById(req.params.id);
 
-    if (!listing)
+    if (!listing) {
       return res.status(404).json({ success: false, error: "Listing not found" });
+    }
 
-    if (listing.seller.toString() !== req.user.id)
+    if (listing.seller.toString() !== req.user.id) {
       return res.status(403).json({ success: false, error: "Not allowed" });
+    }
 
-    // 🔒 BLOCK SOLD / ARCHIVED
     if (listing.status !== "available") {
       return res.status(400).json({
         success: false,
-        error: "Sold listings cannot be edited",
+        error: "Sold or archived listings cannot be edited",
       });
     }
 
-    const fields = ["title", "description", "price", "condition", "category"];
-    fields.forEach((f) => {
-      if (req.body[f] !== undefined) listing[f] = req.body[f];
-    });
+    // 🔒 TITLE UPDATE CHECK
+    if (req.body.title) {
+      const newTitleNorm = req.body.title.trim().toLowerCase();
+
+      const duplicate = await Listing.findOne({
+        seller: req.user.id,
+        titleNormalized: newTitleNorm,
+        _id: { $ne: listing._id },
+      });
+
+      if (duplicate) {
+        return res.status(409).json({
+          success: false,
+          error: "Vous avez déjà une annonce avec ce titre",
+        });
+      }
+
+      listing.title = req.body.title.trim();
+      listing.titleNormalized = newTitleNorm;
+    }
 
     if (req.body.price !== undefined) {
       const p = Number(req.body.price);
       if (Number.isNaN(p) || p < 0.5) {
-        return res.status(400).json({ success: false, error: "Prix invalide (min 0.5 TND)" });
+        return res
+          .status(400)
+          .json({ success: false, error: "Prix invalide (min 0.5 TND)" });
       }
+      listing.price = p;
     }
 
+    ["description", "condition", "category"].forEach((f) => {
+      if (req.body[f] !== undefined) listing[f] = req.body[f];
+    });
 
     await listing.save();
 
     res.json({ success: true, listing });
   } catch (err) {
+    console.error("❌ updateListing ERROR:", err);
     res.status(500).json({ success: false, error: "Server error" });
   }
 };
+
 
 
 export const deleteListing = async (req, res) => {

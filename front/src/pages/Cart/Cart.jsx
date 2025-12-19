@@ -4,7 +4,6 @@ import { usePanier } from "../../context/PanierContext";
 import "./Cart.css";
 import Header from "../../components/Header";
 
-
 const Cart = () => {
     const navigate = useNavigate();
     const { panier, loading, removeProduct, totalPrice, itemCount } = usePanier();
@@ -54,26 +53,38 @@ const Cart = () => {
                         <tbody>
                             {panier.items.map((item) => {
                                 const product = item.product;
-                                const price = product?.price || 0;
+                                console.log("Cart Item Product:", product);
+                                if (!product) return null;
+
+                                const price = product.price || 0;
+                                const sellerName =
+                                    product.seller?.username ||
+                                    product.seller?.name ||
+                                    "vendeur";
 
                                 return (
                                     <tr key={product._id}>
                                         <td>
                                             <div className="cart-product">
                                                 <div className="cart-product-image">
-                                                    {product?.images?.[0] ? (
+                                                    {product.images?.[0] ? (
                                                         <img
                                                             src={`http://localhost:5000${product.images[0]}`}
                                                             alt={product.title}
                                                         />
- 
                                                     ) : (
                                                         <div className="no-image">📦</div>
                                                     )}
                                                 </div>
-                                                <span className="cart-product-name">
-                                                    {product?.title}
-                                                </span>
+
+                                                <div className="cart-product-info">
+                                                    <span className="cart-product-name">
+                                                        {product.title}{" "}
+                                                        <span className="seller-name">
+                                                            – {sellerName}
+                                                        </span>
+                                                    </span>
+                                                </div>
                                             </div>
                                         </td>
 
@@ -86,7 +97,7 @@ const Cart = () => {
                                             <span className="fixed-quantity">1</span>
                                         </td>
 
-                                        {/* SUBTOTAL = PRICE */}
+                                        {/* SUBTOTAL */}
                                         <td className="cart-subtotal">
                                             {price.toFixed(2)} TND
                                         </td>
@@ -96,6 +107,7 @@ const Cart = () => {
                                                 className="btn-remove"
                                                 onClick={() => removeProduct(product._id)}
                                                 disabled={loading}
+                                                title="Supprimer"
                                             >
                                                 🗑️
                                             </button>

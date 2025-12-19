@@ -2,12 +2,18 @@ import mongoose from "mongoose";
 
 const listingSchema = new mongoose.Schema(
     {
-        // 🔹 Core details
         title: {
             type: String,
             required: [true, "Title is required"],
             trim: true,
             maxlength: 100,
+        },
+
+        // 🔒 Normalized title for uniqueness checks
+        titleNormalized: {
+            type: String,
+            required: true,
+            trim: true,
         },
 
         description: {
@@ -29,11 +35,10 @@ const listingSchema = new mongoose.Schema(
             default: "used",
         },
 
-        // 🔹 Relations
         images: [
             {
                 type: String,
-                trim: true
+                trim: true,
             },
         ],
 
@@ -46,11 +51,13 @@ const listingSchema = new mongoose.Schema(
         seller: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
+            required: true,
         },
 
         address: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Address",
+            required: true,
         },
 
         status: {
@@ -69,13 +76,11 @@ const listingSchema = new mongoose.Schema(
             default: 0,
         },
 
-        // 🔥 NOUVEAU: Adresse textuelle (ce que l'utilisateur tape)
         locationText: {
             type: String,
             trim: true,
         },
 
-        // Coordonnées géographiques (pour les recherches géospatiales)
         location: {
             type: {
                 type: String,
@@ -83,21 +88,21 @@ const listingSchema = new mongoose.Schema(
                 default: "Point",
             },
             coordinates: {
-                type: [Number], // [longitude, latitude]
-                default: [10.1815, 36.8065], // Tunis par défaut
+                type: [Number],
+                default: [10.1815, 36.8065],
             },
         },
     },
     { timestamps: true }
 );
 
-// Create index for geospatial queries
-listingSchema.index({ location: "2dsphere" });
+// 🔒 UNIQUE per seller + title
+listingSchema.index(
+    { seller: 1, titleNormalized: 1 },
+    { unique: true }
+);
 
-// Optional helper: increase view count
-listingSchema.methods.incrementViews = function () {
-    this.views += 1;
-    return this.save();
-};
+// 🌍 Geospatial
+listingSchema.index({ location: "2dsphere" });
 
 export default mongoose.model("Listing", listingSchema, "Listing");

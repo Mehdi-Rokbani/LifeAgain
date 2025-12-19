@@ -17,6 +17,7 @@ import Cart from "./pages/Cart/Cart";
 import Checkout from "./pages/Checkout/Checkout";
 import Profile from "./pages/Profile";
 import Chat from "./pages/chat";
+import Favorites from "./pages/Favorites";
 
 /* ===================== SELLER ===================== */
 import CreateAd from "./pages/CreateAd";
@@ -74,6 +75,16 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={["client"]}>
               <Cart />
+            </ProtectedRoute>
+          }
+        />
+
+
+        <Route
+          path="/favorites"
+          element={
+            <ProtectedRoute allowedRoles={["client"]}>
+              <Favorites />
             </ProtectedRoute>
           }
         />

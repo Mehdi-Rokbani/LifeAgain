@@ -49,11 +49,13 @@ export default function Header() {
                 {/* PROFILE DROPDOWN */}
                 <div className="profile-wrapper">
                     <button
-                        className="profile-btn"
+                        className="profile-avatar"
                         onClick={() => setOpenMenu(!openMenu)}
+                        aria-label="User menu"
                     >
-                        <FaUser className="icon" />
+                        {user ? "🧑" : "🙂"}
                     </button>
+
 
                     {openMenu && (
                         <div className="profile-dropdown">

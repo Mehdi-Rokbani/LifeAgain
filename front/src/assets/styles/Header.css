@@ -161,11 +161,25 @@
     position: relative;
 }
 
-.profile-btn {
-    background: none;
-    border: none;
+/* PROFILE AVATAR */
+.profile-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    font-size: 18px;
     cursor: pointer;
-    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s ease;
+}
+
+.profile-avatar:hover {
+    background: #fff;
+    border-color: #C19A3F;
+    transform: scale(1.08);
 }
 
 .profile-dropdown {
@@ -198,4 +212,20 @@
 
 .logout {
     color: #c0392b;
+}
+
+.profile-dropdown {
+    animation: dropdownFade 0.2s ease forwards;
+}
+
+@keyframes dropdownFade {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

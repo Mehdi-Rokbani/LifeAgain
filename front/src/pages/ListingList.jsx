@@ -3,12 +3,21 @@ import { Link } from "react-router-dom";
 import "./ListingsList.css";
 import Header from "../components/Header";
 
+import { FaHeart, FaRegHeart } from "react-icons/fa";
+import { useFavorites } from "../context/FavoriteContext";
+import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
+
+
 export default function ListingsList() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState("grid"); // grid or list
+  const { toggleFavorite, isFavorited } = useFavorites();
+  const { user } = useContext(AuthContext);
+
   const itemsPerPage = 8;
 
   useEffect(() => {
@@ -166,37 +175,48 @@ export default function ListingsList() {
 
               return (
                 <div key={listing._id} className="product-card">
-                  <Link to={`/listings/${listing._id}`} className="product-link">
+                  <div className="favorite-btn-wrapper">
+                    {user && user.role === "client" && (
+                      <button
+                        className="favorite-btn"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          toggleFavorite(listing._id);
+                        }}
+                      >
+                        {isFavorited(listing._id) ? (
+                          <FaHeart className="heart active" />
+                        ) : (
+                          <FaRegHeart className="heart" />
+                        )}
+                      </button>
+                    )}
+                  </div>
 
+                  <Link to={`/listings/${listing._id}`} className="product-link">
                     <div className="product-image">
                       {coverImage ? (
-                        <img
-                          src={`http://localhost:5000${coverImage}`}
-                          alt={listing.title}
-                          onError={(e) => {
-                            e.target.src =
-                              "https://via.placeholder.com/300x300?text=No+Image";
-                          }}
-                        />
+                        <img src={`http://localhost:5000${coverImage}`} alt={listing.title} />
                       ) : (
-                        <div className="no-image">
-                          <span>📷</span>
-                          <p>Pas d'image</p>
-                        </div>
+                        <div className="no-image">📷</div>
                       )}
                     </div>
 
                     <div className="product-info">
                       <h3 className="product-title">{listing.title}</h3>
-                      <p className="product-category">{listing.category?.name || "Divers"}</p>
+
+                      {listing.seller?.username && (
+                        <p className="product-seller">
+                          par <strong>{listing.seller.username}</strong>
+                        </p>
+                      )}
+
                       <p className="product-price">{listing.price} TND</p>
                     </div>
                   </Link>
-
-                  <Link to={`/listings/${listing._id}`} className="compare-btn">
-                    Détails
-                  </Link>
                 </div>
+
+
               );
             })}
 

@@ -6,9 +6,14 @@ import Header from "../components/Header";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+import { FaHeart, FaRegHeart } from "react-icons/fa";
+import { useFavorites } from "../context/FavoriteContext";
+
 export default function ListingDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  const { toggleFavorite, isFavorited } = useFavorites();
 
   // ---------------- STATE ----------------
   const [listing, setListing] = useState(null);
@@ -24,7 +29,8 @@ export default function ListingDetail() {
   const auth = JSON.parse(localStorage.getItem("user"));
   const user = auth?.user || auth;
 
-  const isSeller = user?.role === "seller";
+  const userId = user?._id || user?.id;
+  const isSeller = listing?.seller?._id === userId;
 
   // ---------------- MEMO ----------------
   const alreadyInCart = useMemo(() => {
@@ -94,9 +100,31 @@ export default function ListingDetail() {
       : toast.error("❌ Erreur lors de l'ajout au panier");
   };
 
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    if (isSeller) {
+      toast.info("Vous ne pouvez pas ajouter votre propre produit en favori");
+      return;
+    }
+
+    const result = await toggleFavorite(listing._id);
+
+    if (result === true) toast.success("❤️ Ajouté aux favoris");
+    if (result === false) toast.info("💔 Retiré des favoris");
+  };
+
   const startChat = async () => {
     if (!user) {
       navigate("/login");
+      return;
+    }
+
+    if (isSeller) {
+      toast.info("Vous êtes le vendeur de ce produit");
       return;
     }
 
@@ -107,7 +135,7 @@ export default function ListingDetail() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ user2: listing.seller }),
+        body: JSON.stringify({ user2: listing.seller._id }),
       });
 
       const data = await res.json();
@@ -139,7 +167,6 @@ export default function ListingDetail() {
     );
   }
 
-  // ---------------- IMAGES ----------------
   const images = Array.isArray(listing.images) ? listing.images : [];
   const mainImage = images[activeImage] || images[0];
 
@@ -170,21 +197,37 @@ export default function ListingDetail() {
         )}
 
         <div className="main-image">
-          {mainImage ? (
-            <img src={`http://localhost:5000${mainImage}`} alt={listing.title} />
-          ) : (
-            <div className="no-image">Aucune image</div>
-          )}
+          <img src={`http://localhost:5000${mainImage}`} alt={listing.title} />
         </div>
 
         <div className="product-info">
-          <h1>{listing.title}</h1>
+          <div className="title-row">
+            <h1>{listing.title}</h1>
+
+            {!isSeller && (
+              <button
+                className="favorite-btn"
+                onClick={handleToggleFavorite}
+              >
+                {isFavorited(listing._id) ? (
+                  <FaHeart className="heart active" />
+                ) : (
+                  <FaRegHeart className="heart" />
+                )}
+              </button>
+            )}
+          </div>
+
+          {listing.seller?.username && (
+            <p className="seller-name">
+              Vendeur : <strong>{listing.seller.username}</strong>
+            </p>
+          )}
 
           <p className="product-price">
             {listing.price} <span>TND</span>
           </p>
 
-          {/* ✅ ACTIONS ONLY FOR NON-SELLERS */}
           {!isSeller && (
             <div className="product-actions">
               <button className="btn contact-btn" onClick={startChat}>
@@ -205,7 +248,6 @@ export default function ListingDetail() {
             </div>
           )}
 
-          {/* META INFO */}
           <div className="product-meta">
             <span className="meta-badge">👁 {listing.views} vues</span>
             <span className="meta-badge">📦 {listing.condition}</span>
@@ -240,7 +282,7 @@ export default function ListingDetail() {
               <p>Catégorie : {listing.category?.name}</p>
               <p>État : {listing.condition}</p>
               <p>Prix : {listing.price} TND</p>
-              <p>Vues : {listing.views}</p>
+              <p>Vendeur : {listing.seller?.username}</p>
             </>
           )}
         </div>

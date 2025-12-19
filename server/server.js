@@ -18,6 +18,7 @@ import panierRoutes from "./routes/panierRoutes.js";
 import listingRoutes from "./routes/listingRoutes.js";
 import commandeRoutes from "./routes/commandeRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import favoriteRoutes from "./routes/favRoutes.js";
 
 // Socket handler
 import registerChatHandler from "./Socket/chatHandler.js";
@@ -78,6 +79,8 @@ app.use("/api/panier", panierRoutes);
 app.use("/api/listings", listingRoutes);
 app.use("/api/commandes", commandeRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/favorites", favoriteRoutes);
+
 
 
 // -----------------------------
