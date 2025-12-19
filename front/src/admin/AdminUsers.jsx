@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import React from "react";
+
 export default function AdminUsers() {
     const [users, setUsers] = useState([]);
     const token = localStorage.getItem("token");
+    const auth = JSON.parse(localStorage.getItem("user")); // logged admin
 
     const headers = {
         Authorization: `Bearer ${token}`,
@@ -18,7 +20,7 @@ export default function AdminUsers() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.message);
 
-            setUsers(data.users || data);
+            setUsers(data.users || []);
         } catch (err) {
             toast.error(err.message || "Failed to load users");
         }
@@ -54,38 +56,52 @@ export default function AdminUsers() {
         <div style={{ padding: 30 }}>
             <h1>Admin • Users</h1>
 
-            <table width="100%">
+            <table width="100%" cellPadding={10}>
                 <thead>
                     <tr>
                         <th align="left">Username</th>
                         <th align="left">Email</th>
                         <th align="left">Role</th>
-                        <th />
+                        <th align="right">Action</th>
                     </tr>
                 </thead>
+
                 <tbody>
-                    {users.map((u) => (
-                        <tr key={u._id}>
-                            <td>{u.username}</td>
-                            <td>{u.email}</td>
-                            <td>{u.role}</td>
-                            <td align="right">
-                                <button
-                                    onClick={() => deleteUser(u._id)}
-                                    style={{
-                                        background: "#ff4d4f",
-                                        color: "#fff",
-                                        border: "none",
-                                        padding: "6px 12px",
-                                        borderRadius: 6,
-                                        cursor: "pointer",
-                                    }}
-                                >
-                                    Delete
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
+                    {users.map((u) => {
+                        const isSelf = u._id === auth?.id;
+                        const isAdmin = u.role === "admin";
+                        const canDelete = !isSelf && !isAdmin;
+
+                        return (
+                            <tr key={u._id}>
+                                <td>{u.username}</td>
+                                <td>{u.email}</td>
+                                <td>{u.role}</td>
+                                <td align="right">
+                                    {canDelete ? (
+                                        <button
+                                            onClick={() => deleteUser(u._id)}
+                                            style={{
+                                                background: "#ff4d4f",
+                                                color: "#fff",
+                                                border: "none",
+                                                padding: "6px 12px",
+                                                borderRadius: 6,
+                                                cursor: "pointer",
+                                            }}
+                                        >
+                                            Delete
+                                        </button>
+                                    ) : (
+                                        <span style={{ color: "#999", fontStyle: "italic" }}>
+                                            Protected
+                                        </span>
+                                    )}
+                                </td>
+                            </tr>
+                        );
+                    })}
+
                     {users.length === 0 && (
                         <tr>
                             <td colSpan={4}>No users</td>

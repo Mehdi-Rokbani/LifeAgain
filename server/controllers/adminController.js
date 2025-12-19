@@ -5,6 +5,8 @@ import Listing from "../models/Listing.js";
 import Image from "../models/Image.js";
 import Commande from "../models/Commande.js";
 import Panier from "../models/Panier.js";
+import Favorite from "../models/Favorites.js";
+
 import Address from "../models/Address.js";
 
 
@@ -59,38 +61,58 @@ export const adminGetUserById = async (req, res) => {
  * - Addresses
  * - User
  */
+
 export const adminDeleteUserCascade = async (req, res) => {
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-        const userId = req.params.id;
+        const targetUserId = req.params.id;
+        const adminId = req.user.id;
 
-        // 1️⃣ Find listings owned by user
-        const listings = await Listing.find({ seller: userId }).session(session);
+        // 1️⃣ Prevent self delete
+        if (targetUserId === adminId) {
+            return res.status(403).json({
+                message: "You cannot delete your own admin account",
+            });
+        }
+
+        const targetUser = await User.findById(targetUserId).session(session);
+
+        if (!targetUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // 2️⃣ Prevent deleting other admins
+        if (targetUser.role === "admin") {
+            return res.status(403).json({
+                message: "You cannot delete another admin",
+            });
+        }
+
+        // 3️⃣ Cascade delete
+        const listings = await Listing.find({ seller: targetUserId }).session(session);
         const listingIds = listings.map(l => l._id);
 
-        // 2️⃣ Delete images (Image collection)
+        await Panier.updateMany(
+            {},
+            { $pull: { items: { product: { $in: listingIds } } } },
+            { session }
+        );
+
+        // 3️⃣ REMOVE LISTINGS FROM FAVORITES
+        await Favorite.deleteMany(
+            { listing: { $in: listingIds } },
+            { session }
+        );
+
         await Image.deleteMany({ listing: { $in: listingIds } }).session(session);
+        await Listing.deleteMany({ seller: targetUserId }).session(session);
+        await Commande.deleteMany({ buyer: targetUserId }).session(session);
+        await Panier.deleteMany({ user: targetUserId }).session(session);
+        await Address.deleteMany({ user: targetUserId }).session(session);
 
-        // 3️⃣ Delete listings
-        await Listing.deleteMany({ seller: userId }).session(session);
-
-        // 4️⃣ Delete commandes (buyer side)
-        await Commande.deleteMany({ buyer: userId }).session(session);
-
-        // 5️⃣ Delete panier
-        await Panier.deleteMany({ user: userId }).session(session);
-
-        // 6️⃣ Delete addresses
-        await Address.deleteMany({ user: userId }).session(session);
-
-        // 7️⃣ Delete user
-        const deletedUser = await User.findByIdAndDelete(userId).session(session);
-
-        if (!deletedUser) {
-            throw new Error("User not found");
-        }
+        await User.findByIdAndDelete(targetUserId).session(session);
 
         await session.commitTransaction();
         session.endSession();
@@ -99,15 +121,15 @@ export const adminDeleteUserCascade = async (req, res) => {
             success: true,
             message: "User and all related data deleted permanently",
         });
-
     } catch (err) {
         await session.abortTransaction();
         session.endSession();
-
         console.error("ADMIN DELETE USER ERROR:", err);
-        res.status(500).json({ success: false });
+        res.status(500).json({ message: "Server error" });
     }
 };
+
+
 
 /* ===========================================================
    LISTINGS — ADMIN
@@ -133,36 +155,85 @@ export const adminGetAllListings = async (req, res) => {
  * UPDATE LISTING (admin)
  * Admin can update ANY listing (even sold)
  */
+// controllers/adminController.js
+
+
+const normalizeTitle = (title) =>
+    title.trim().toLowerCase().replace(/\s+/g, " ");
+
 export const adminUpdateListing = async (req, res) => {
     try {
         const listing = await Listing.findById(req.params.id);
         if (!listing) {
-            return res.status(404).json({ success: false });
+            return res.status(404).json({
+                success: false,
+                message: "Listing not found",
+            });
         }
 
-        const allowedFields = [
-            "title",
-            "description",
-            "price",
-            "condition",
-            "category",
-            "status",
-            "phone",
-        ];
+        const {
+            title,
+            description,
+            price,
+            condition,
+            category,
+            status,
+        } = req.body;
 
-        allowedFields.forEach((field) => {
-            if (req.body[field] !== undefined) {
-                listing[field] = req.body[field];
+        // ================= TITLE (UNIQUE PER SELLER) =================
+        if (title && title !== listing.title) {
+            const titleNormalized = normalizeTitle(title);
+
+            const exists = await Listing.findOne({
+                _id: { $ne: listing._id },   // exclude current listing
+                seller: listing.seller,
+                titleNormalized,
+            });
+
+            if (exists) {
+                return res.status(409).json({
+                    success: false,
+                    message: "This seller already has a listing with this title",
+                });
             }
-        });
+
+            listing.title = title;
+            listing.titleNormalized = titleNormalized;
+        }
+
+        // ================= OTHER FIELDS =================
+        if (description !== undefined) listing.description = description;
+        if (price !== undefined) listing.price = price;
+        if (condition !== undefined) listing.condition = condition;
+        if (category !== undefined) listing.category = category;
+        if (status !== undefined) listing.status = status;
 
         await listing.save();
 
-        res.json({ success: true, listing });
+        res.json({
+            success: true,
+            message: "Listing updated successfully",
+            listing,
+        });
+
     } catch (err) {
-        res.status(500).json({ success: false });
+        console.error("ADMIN UPDATE LISTING ERROR:", err);
+
+        // extra safety for unique index
+        if (err.code === 11000) {
+            return res.status(409).json({
+                success: false,
+                message: "Duplicate listing title for this seller",
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
     }
 };
+
 
 /**
  * DELETE LISTING — HARD CASCADE (admin)
@@ -241,8 +312,6 @@ export const adminUpdateCommandeStatus = async (req, res) => {
     }
 };
 
-
-
 export const adminCreateListing = async (req, res) => {
     try {
         const {
@@ -256,27 +325,37 @@ export const adminCreateListing = async (req, res) => {
         } = req.body;
 
         if (!title || !description || !price || !category || !seller || !address) {
-            return res.status(400).json({ message: "Missing required fields" });
+            return res.status(400).json({
+                success: false,
+                message: "All required fields must be filled",
+            });
         }
 
         if (!mongoose.Types.ObjectId.isValid(seller)) {
-            return res.status(400).json({ message: "Invalid seller ID" });
+            return res.status(400).json({
+                success: false,
+                message: "Invalid seller",
+            });
         }
 
         const coverFile = req.files?.cover?.[0];
         const photoFiles = req.files?.photos || [];
 
         if (!coverFile) {
-            return res.status(400).json({ message: "Cover image required" });
+            return res.status(400).json({
+                success: false,
+                message: "Cover image is required",
+            });
         }
 
         const imageUrls = [
             `/uploads/${coverFile.filename}`,
-            ...photoFiles.map(f => `/uploads/${f.filename}`)
+            ...photoFiles.map(f => `/uploads/${f.filename}`),
         ];
 
         const listing = await Listing.create({
             title,
+            titleNormalized: title.trim().toLowerCase(), // ✅ ENSURE THIS IS SET
             description,
             price,
             category,
@@ -291,7 +370,7 @@ export const adminCreateListing = async (req, res) => {
             },
         });
 
-        // Save images in Image collection
+        // Save images
         const images = [];
 
         images.push({
@@ -312,15 +391,89 @@ export const adminCreateListing = async (req, res) => {
 
         await Image.insertMany(images);
 
-        res.status(201).json({
+        return res.status(201).json({
             success: true,
-            message: "Listing created by admin",
+            message: "Listing created successfully",
             listing,
         });
 
     } catch (err) {
         console.error("ADMIN CREATE LISTING ERROR:", err);
-        res.status(500).json({ message: "Server error" });
+
+        // ✅ DUPLICATE TITLE (seller already posted same product)
+        if (
+            err.code === 11000 ||
+            err.message?.includes("titleNormalized")
+        ) {
+            return res.status(409).json({
+                success: false,
+                message: "This seller already posted a listing with the same title",
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: "Unexpected server error while creating listing",
+        });
     }
 };
 
+export const adminGetSellers = async (req, res) => {
+    try {
+        const sellers = await User.find({
+            role: "seller"
+        }).select("_id username email");
+
+        res.json({ success: true, sellers });
+    } catch {
+        res.status(500).json({ success: false });
+    }
+};
+export const adminGetSellerAddresses = async (req, res) => {
+    try {
+        const addresses = await Address.find({ user: req.params.id });
+        res.json({ success: true, addresses });
+    } catch {
+        res.status(500).json({ success: false });
+    }
+};
+export const adminAddSellerAddress = async (req, res) => {
+    try {
+        const address = await Address.create({
+            user: req.params.id,
+            ...req.body,
+        });
+
+        res.status(201).json({ success: true, address });
+    } catch {
+        res.status(500).json({ success: false });
+    }
+};
+
+
+// controllers/adminController.js
+export const adminGetListingById = async (req, res) => {
+    try {
+        const listing = await Listing.findById(req.params.id)
+            .populate("category", "name")
+            .populate("seller", "username email");
+
+        if (!listing) {
+            return res.status(404).json({
+                success: false,
+                message: "Listing not found",
+            });
+        }
+
+        res.json({
+            success: true,
+            listing,
+        });
+    } catch (err) {
+        console.error("ADMIN GET LISTING ERROR:", err);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+        });
+    }
+};

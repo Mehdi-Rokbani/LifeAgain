@@ -11,13 +11,16 @@ import {
    adminGetAllUsers,
    adminGetUserById,
    adminDeleteUserCascade,
-
+   adminAddSellerAddress,
+   adminGetSellers,
+   adminGetSellerAddresses,
    adminGetAllListings,
    adminUpdateListing,
    adminDeleteListingCascade,
    adminCreateListing,
    adminGetAllCommandes,
    adminUpdateCommandeStatus,
+   adminGetListingById
 } from "../controllers/adminController.js";
 
 import { protect, isAdmin } from "../middleware/auth.js";
@@ -55,6 +58,15 @@ router.put("/listings/:id", adminUpdateListing);
 
 // DELETE listing + cascade
 router.delete("/listings/:id", adminDeleteListingCascade);
+
+router.get("/sellers", adminGetSellers);
+router.get("/sellers/:id/addresses", adminGetSellerAddresses);
+router.post("/sellers/:id/addresses", adminAddSellerAddress);
+
+// routes/admin.js
+router.get("/listings/:id", adminGetListingById);
+
+
 
 /* ===========================================================
    COMMANDES — ADMIN
