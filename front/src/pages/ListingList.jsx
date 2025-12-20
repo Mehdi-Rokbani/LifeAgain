@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useMemo } from "react";
 import { Link } from "react-router-dom";
 import "./ListingsList.css";
 import Header from "../components/Header";
@@ -12,6 +12,7 @@ export default function ListingsList() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState("grid");
 
@@ -20,9 +21,6 @@ export default function ListingsList() {
 
   const itemsPerPage = 8;
 
-  // --------------------------------------------------
-  // FETCH LISTINGS (ONLY AVAILABLE)
-  // --------------------------------------------------
   useEffect(() => {
     const fetchListings = async () => {
       try {
@@ -32,20 +30,11 @@ export default function ListingsList() {
         const data = await res.json();
 
         let rawListings = [];
+        if (data.success && Array.isArray(data.listings)) rawListings = data.listings;
+        else if (Array.isArray(data)) rawListings = data;
+        else if (Array.isArray(data.listings)) rawListings = data.listings;
 
-        if (data.success && Array.isArray(data.listings)) {
-          rawListings = data.listings;
-        } else if (Array.isArray(data)) {
-          rawListings = data;
-        } else if (Array.isArray(data.listings)) {
-          rawListings = data.listings;
-        }
-
-        // ✅ FILTER HERE (IMPORTANT)
-        const onlyAvailable = rawListings.filter(
-          (l) => l.status === "available"
-        );
-
+        const onlyAvailable = rawListings.filter((l) => l.status === "available");
         setListings(onlyAvailable);
       } catch (err) {
         setError(err.message);
@@ -58,45 +47,53 @@ export default function ListingsList() {
     fetchListings();
   }, []);
 
-  // --------------------------------------------------
-  // PAGINATION
-  // --------------------------------------------------
+  // Pagination
+  const totalPages = Math.ceil(listings.length / itemsPerPage);
+
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentListings = listings.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
-  const totalPages = Math.ceil(listings.length / itemsPerPage);
+
+  const currentListings = useMemo(() => {
+    return listings.slice(indexOfFirstItem, indexOfLastItem);
+  }, [listings, indexOfFirstItem, indexOfLastItem]);
 
   const paginate = (page) => setCurrentPage(page);
 
-  // --------------------------------------------------
-  // STATES
-  // --------------------------------------------------
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="spinner" />
-        <p>Chargement des annonces...</p>
+      <div className="page-shell">
+        <Header />
+        <div className="shop-wrap">
+          <div className="loading-container">
+            <div className="spinner" />
+            <p>Chargement des annonces...</p>
+          </div>
+        </div>
+        <Footer />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="error-container">
-        <h2>Erreur</h2>
-        <p>{error}</p>
-        <button onClick={() => window.location.reload()}>
-          Réessayer
-        </button>
+      <div className="page-shell">
+        <Header />
+        <div className="shop-wrap">
+          <div className="error-container">
+            <h2>Erreur</h2>
+            <p>{error}</p>
+            <button className="retry-btn" onClick={() => window.location.reload()}>
+              Réessayer
+            </button>
+          </div>
+        </div>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="shop-page">
+    <div className="page-shell">
       <Header />
 
       {/* HERO */}
@@ -107,114 +104,155 @@ export default function ListingsList() {
         </div>
       </div>
 
-      {/* CONTROLS */}
-      <div className="shop-controls">
-        <div className="controls-left">
-          <button className="filter-btn">☰ Filtres</button>
+      <div className="shop-wrap">
+        {/* CONTROLS */}
+        <div className="shop-controls">
+          <div className="controls-left">
+            <button className="filter-btn" type="button" disabled>
+              ☰ Filtres
+              <span className="pill-soon">Bientôt</span>
+            </button>
 
-          <button
-            className={`view-btn ${viewMode === "grid" ? "active" : ""}`}
-            onClick={() => setViewMode("grid")}
-          >
-            ⊞
-          </button>
+            <div className="view-toggle" role="tablist" aria-label="View mode">
+              <button
+                type="button"
+                className={`view-btn ${viewMode === "grid" ? "active" : ""}`}
+                onClick={() => setViewMode("grid")}
+                aria-pressed={viewMode === "grid"}
+                title="Grid"
+              >
+                ⊞
+              </button>
 
-          <button
-            className={`view-btn ${viewMode === "list" ? "active" : ""}`}
-            onClick={() => setViewMode("list")}
-          >
-            ☰
-          </button>
+              <button
+                type="button"
+                className={`view-btn ${viewMode === "list" ? "active" : ""}`}
+                onClick={() => setViewMode("list")}
+                aria-pressed={viewMode === "list"}
+                title="List"
+              >
+                ☰
+              </button>
+            </div>
 
-          <span className="results-count">
-            Affichage {indexOfFirstItem + 1}–
-            {Math.min(indexOfLastItem, listings.length)} sur{" "}
-            {listings.length}
-          </span>
+            <span className="results-count">
+              Affichage {Math.min(indexOfFirstItem + 1, listings.length)}–{Math.min(indexOfLastItem, listings.length)} sur{" "}
+              {listings.length}
+            </span>
+          </div>
         </div>
-      </div>
 
-      {/* PRODUCTS */}
-      {listings.length === 0 ? (
-        <div className="no-listings">
-          <h3>Aucune annonce disponible</h3>
-        </div>
-      ) : (
-        <>
-          <div className={`products-container ${viewMode}`}>
-            {currentListings.map((listing) => {
-              const coverImage = listing.images?.[0];
+        {/* PRODUCTS */}
+        {listings.length === 0 ? (
+          <div className="no-listings">
+            <h3>Aucune annonce disponible</h3>
+            <p>Reviens plus tard ou explore d’autres catégories.</p>
+          </div>
+        ) : (
+          <>
+            <div className={`products-container ${viewMode}`}>
+              {currentListings.map((listing) => {
+                const coverImage = listing.images?.[0];
+                const sellerName =
+                  listing.seller?.username || listing.seller?.name || "Vendeur";
 
-              return (
-                <div key={listing._id} className="product-card">
-                  {/* FAVORITE */}
-                  {user?.role === "client" && (
-                    <button
-                      className="favorite-btn"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        toggleFavorite(listing._id);
-                      }}
-                    >
-                      {isFavorited(listing._id) ? (
-                        <FaHeart className="heart active" />
-                      ) : (
-                        <FaRegHeart className="heart" />
-                      )}
-                    </button>
-                  )}
-
+                return (
                   <Link
+                    key={listing._id}
                     to={`/listings/${listing._id}`}
-                    className="product-link"
+                    className="product-card"
                   >
+                    {/* IMAGE */}
                     <div className="product-image">
                       {coverImage ? (
                         <img
                           src={`http://localhost:5000${coverImage}`}
                           alt={listing.title}
+                          loading="lazy"
                         />
                       ) : (
                         <div className="no-image">📦</div>
                       )}
+
+                      {/* FAVORITE */}
+                      {user?.role === "client" && (
+                        <button
+                          type="button"
+                          className="favorite-btn"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            toggleFavorite(listing._id);
+                          }}
+                          aria-label="Toggle favorite"
+                          title="Favoris"
+                        >
+                          {isFavorited(listing._id) ? (
+                            <FaHeart className="heart active" />
+                          ) : (
+                            <FaRegHeart className="heart" />
+                          )}
+                        </button>
+                      )}
                     </div>
 
+                    {/* INFO */}
                     <div className="product-info">
-                      <h3>{listing.title}</h3>
+                      <div className="product-top">
+                        <h3 className="product-title" title={listing.title}>
+                          {listing.title}
+                        </h3>
+                        <p className="product-price">{listing.price} TND</p>
+                      </div>
 
-                      {listing.seller?.username && (
-                        <p className="product-seller">
-                          par <strong>{listing.seller.username}</strong>
-                        </p>
-                      )}
-
-                      <p className="product-price">
-                        {listing.price} TND
-                      </p>
+                      <div className="product-meta">
+                        <span className="product-seller">
+                          par <strong>{sellerName}</strong>
+                        </span>
+                        <span className="product-badge">Disponible</span>
+                      </div>
                     </div>
                   </Link>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* PAGINATION */}
-          {totalPages > 1 && (
-            <div className="pagination">
-              {Array.from({ length: totalPages }).map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => paginate(i + 1)}
-                  className={`page-btn ${currentPage === i + 1 ? "active" : ""
-                    }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
+                );
+              })}
             </div>
-          )}
-        </>
-      )}
+
+            {/* PAGINATION */}
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button
+                  className="page-btn nav"
+                  onClick={() => paginate(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  type="button"
+                >
+                  ←
+                </button>
+
+                {Array.from({ length: totalPages }).map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => paginate(i + 1)}
+                    className={`page-btn ${currentPage === i + 1 ? "active" : ""}`}
+                    type="button"
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+
+                <button
+                  className="page-btn nav"
+                  onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  type="button"
+                >
+                  →
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
       <Footer />
     </div>
   );

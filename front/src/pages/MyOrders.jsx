@@ -6,6 +6,7 @@ import "./MyOrders.css";
 export default function MyOrders() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    console.log(orders, "aaaaaaa client");
 
     useEffect(() => {
         const loadOrders = async () => {

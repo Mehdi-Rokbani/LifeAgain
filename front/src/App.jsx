@@ -26,7 +26,7 @@ import Overview from "./sellerdashboard/Overview";
 import MyListings from "./sellerdashboard/MyListings";
 import EditListing from "./sellerdashboard/EditListing";
 import Settings from "./sellerdashboard/Settings";
-import MyOrders from "./sellerdashboard/SellerOrders";
+import MyOrders from "./pages/MyOrders";
 
 /* ===================== ADMIN ===================== */
 import AdminLayout from "./admin/AdminLayout";
