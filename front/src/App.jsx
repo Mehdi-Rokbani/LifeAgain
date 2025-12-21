@@ -19,6 +19,7 @@ import Checkout from "./pages/Checkout/Checkout";
 import Profile from "./pages/Profile";
 import Chat from "./pages/chat";
 import Favorites from "./pages/Favorites";
+import MyOrders1 from "./pages/MyOrders";
 
 /* ===================== SELLER ===================== */
 import CreateAd from "./pages/CreateAd";
@@ -26,7 +27,7 @@ import Overview from "./sellerdashboard/Overview";
 import MyListings from "./sellerdashboard/MyListings";
 import EditListing from "./sellerdashboard/EditListing";
 import Settings from "./sellerdashboard/Settings";
-import MyOrders from "./pages/MyOrders";
+import MyOrders from "./sellerdashboard/SellerOrders";
 
 /* ===================== ADMIN ===================== */
 import AdminLayout from "./admin/AdminLayout";
@@ -88,7 +89,7 @@ export default function App() {
           path="/my-orders"
           element={
             <ProtectedRoute allowedRoles={["client"]}>
-              <MyOrders />
+              <MyOrders1 />
             </ProtectedRoute>
           }
         />
